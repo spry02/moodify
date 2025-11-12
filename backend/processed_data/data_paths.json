@@ -1,0 +1,4 @@
+{
+  "affectnet_base_path": "C:\\Users\\kubal\\.cache\\kagglehub\\datasets\\mstjebashazida\\affectnet\\versions\\1",
+  "note": "Ścieżki w CSV są względne. Użyj affectnet_base_path + relative_path aby uzyskać pełną ścieżkę."
+}
