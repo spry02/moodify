@@ -1,4 +1,5 @@
 fastapi
 httpx
 uvicorn[standard]
+firebase_admin
 
