@@ -8,6 +8,7 @@ import { GenerateButton } from "./components/GenerateButton";
 import { SongsList, TrackItem } from "./components/SongsList";
 import { PlaylistsList, PlaylistItem } from "./components/PlaylistsList";
 import { RecommendationsSummary } from "./components/Recommendations";
+import { LoginPanel } from "./components/LoginPanel";
 import { MoodType } from "./types";
 
 const gradient =
@@ -181,6 +182,7 @@ export default function App() {
               </p>
             </div>
           </div>
+          <LoginPanel />
         </header>
 
         <main className="mt-10 space-y-6">

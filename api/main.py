@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Request
 
 from services.spotify import (
     SpotifyAPI,
@@ -34,8 +34,6 @@ def get_spotify_api() -> SpotifyAPI:
 
 @app.get("/", summary="Testowy endpoint")
 async def read_root() -> dict[str, str]:
-    create_user_in_firebase(db, "newuser1@example.com", "supersecretpassword1", "New User 1")
-    log_into_firebase("newuser1@example.com", "supersecretpassword1")
     return {"message": "Hello World"}
 
 
@@ -43,6 +41,7 @@ async def read_root() -> dict[str, str]:
     "/spotify/health",
     summary="Sprawdzenie połączenia ze Spotify API",
 )
+
 async def spotify_health_check(
     spotify_api: SpotifyAPI = Depends(get_spotify_api),
 ) -> dict[str, Any]:
@@ -63,3 +62,21 @@ async def spotify_health_check(
             detail=str(exc),
         ) from exc
 
+
+@app.post(
+    "/api/firebase/login/",
+    summary="Logowanie do Firebase"
+)
+async def firebase_login(request: Request) -> dict[str, Any]:
+    req = await request.json()
+    
+    email = req.get("email")
+    passwd = req.get("passwd")
+    try:
+        uid = log_into_firebase(email, passwd)
+        return {"status": "ok", "uid": uid["localId"], "token": uid["idToken"], "displayName": uid["displayName"]}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(e),
+        ) from e
