@@ -68,3 +68,9 @@ service-account.json
 
 # dataconnect generated files
 .dataconnect
+
+.venv/
+
+.vscode/
+
+.env.cuda
