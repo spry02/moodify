@@ -1,0 +1,80 @@
+
+.popup-overlay
+{
+	position: fixed;
+	inset: 0;
+	backdrop-filter: blur(6px);
+	background: rgba(0, 0, 0, 0.45);
+	/* przezroczysty gradient */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.popup-window
+{
+	width: 380px;
+	background: #ffffffdd;
+	border-radius: 14px;
+	padding: 24px;
+	box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
+	animation: fadeIn 0.3s ease;
+}
+
+.auth-switch
+{
+	display: flex;
+	justify-content: space-around;
+	margin-bottom: 22px;
+}
+
+.auth-switch button
+{
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	border: none;
+	background: none;
+	padding: 8px 16px;
+	cursor: pointer;
+	font-size: 16px;
+	opacity: 0.6;
+}
+
+.auth-switch button.active
+{
+	opacity: 1;
+	border-bottom: 3px solid #333;
+}
+
+input
+{
+	width: 100%;
+	padding: 10px;
+	margin: 8px 0;
+	border-radius: 8px;
+	border: 1px solid #bbb;
+}
+
+.submit-btn
+{
+	width: 100%;
+	padding: 12px;
+	border: none;
+	background: #333;
+	color: white;
+	border-radius: 8px;
+	cursor: pointer;
+	margin-top: 10px;
+}
+
+.link-btn
+{
+	margin-top: 10px;
+	background: none;
+	border: none;
+	color: #333;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
