@@ -1,7 +1,9 @@
 from functools import lru_cache
 from typing import Any
+import random
 
 from fastapi import Depends, FastAPI, HTTPException, status, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from services.spotify import (
     SpotifyAPI,
@@ -14,6 +16,7 @@ from dotenv import load_dotenv
 import pathlib
 
 from services.firebase import *
+from data.mock_songs import MOOD_SONGS
 
 baseDir = pathlib.Path(__file__).parent.parent
 sa_path = baseDir / "service-account.json"
@@ -26,6 +29,15 @@ if sa_path.exists():
 load_dotenv(baseDir / ".env")
 
 app = FastAPI(title="Moodify API", version="0.1.0")
+
+# Konfiguracja CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @lru_cache
 def get_spotify_api() -> SpotifyAPI:
@@ -80,3 +92,33 @@ async def firebase_login(request: Request) -> dict[str, Any]:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(e),
         ) from e
+
+
+@app.post(
+    "/api/mood/song/",
+    summary="Zwraca utwór na podstawie nastroju"
+)
+async def get_mood_song(request: Request) -> dict[str, Any]:
+    req = await request.json()
+    mood = req.get("mood")
+    
+    valid_moods = ["Szczęśliwy", "Smutny", "Zestresowany", "Spokojny", "Zmęczony"]
+    
+    if mood not in valid_moods:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Nieprawidłowy nastrój. Dozwolone wartości: {', '.join(valid_moods)}"
+        )
+    
+    songs = MOOD_SONGS.get(mood, [])
+    if not songs:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Brak utworów dla tego nastroju"
+        )
+    
+    selected_song = random.choice(songs)
+    return {
+        "mood": mood,
+        "song": selected_song
+    }
