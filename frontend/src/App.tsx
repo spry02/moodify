@@ -10,6 +10,7 @@ import { PlaylistsList, PlaylistItem } from "./components/PlaylistsList";
 import { RecommendationsSummary } from "./components/Recommendations";
 import { LoginPanel } from "./components/LoginPanel";
 import { MoodType } from "./types";
+import { MoodSongResponse } from "./api/api";
 
 const gradient =
   "bg-[radial-gradient(1200px_600px_at_80%_-10%,rgba(99,102,241,0.35),transparent),radial-gradient(1200px_800px_at_-10%_30%,rgba(34,197,94,0.25),transparent),linear-gradient(180deg,rgba(255,255,255,0.05),transparent)]";
@@ -86,6 +87,7 @@ export default function App() {
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [moodSong, setMoodSong] = useState<MoodSongResponse | null>(null);
 
   const handlePhotoUpload = (file: File) => {
     const reader = new FileReader();
@@ -153,7 +155,21 @@ export default function App() {
               value={selectedMood}
               onChange={setSelectedMood}
               disabled={false}
+              onSongReceived={setMoodSong}
             />
+            {moodSong && (
+              <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4">
+                <p className="text-sm font-semibold text-emerald-100">
+                  Wybrano utwór dla nastroju: {moodSong.mood}
+                </p>
+                <p className="mt-2 text-sm text-white/90">
+                  {moodSong.song.title} - {moodSong.song.artist}
+                </p>
+                <p className="mt-1 text-xs text-white/60">
+                  Spotify ID: {moodSong.song.spotify_id}
+                </p>
+              </div>
+            )}
           </Card>
         );
       default:
