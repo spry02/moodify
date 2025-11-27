@@ -1,5 +1,5 @@
 // Mock API - symulacja backendu
-import { Mood, MoodType } from './types';
+import { Mood, MoodType } from '../types/types';
 
 // Mock baza danych
 let MOCK_MOODS_DB: Mood[] = [];
