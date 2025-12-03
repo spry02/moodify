@@ -9,29 +9,199 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #020617;
+  color: #f8fafc;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Style dla select dropdown */
+:root[data-theme='dark'] body {
+  background-color: #020308;
+  color: #f8fafc;
+  background-image: radial-gradient(circle at 10% 40%, rgba(16, 185, 129, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 0%, rgba(99, 102, 241, 0.25), transparent 50%),
+    linear-gradient(180deg, #050910, #010205);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+:root[data-theme='light'] body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  background-image: linear-gradient(180deg, rgba(148, 163, 184, 0.35), #ffffff);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
 select {
   color-scheme: dark;
 }
 
-select option {
+:root[data-theme='light'] select {
+  color-scheme: light;
+}
+
+.theme-dark,
+.theme-light {
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+.theme-light {
+  color: #0f172a;
+  background-color: #f8fafc;
+}
+
+.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+.theme-light .text-white\/90 {
+  color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.theme-light .text-white\/80 {
+  color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.theme-light .text-white\/70 {
+  color: rgba(15, 23, 42, 0.7) !important;
+}
+
+.theme-light .text-white\/60 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+
+.theme-light .text-white\/50 {
+  color: rgba(15, 23, 42, 0.5) !important;
+}
+
+.theme-light .text-white\/40,
+.theme-light .placeholder-white\/40::placeholder {
+  color: rgba(15, 23, 42, 0.45) !important;
+}
+
+.theme-light .text-white\/30 {
+  color: rgba(15, 23, 42, 0.35) !important;
+}
+
+.theme-light .text-white\/20 {
+  color: rgba(15, 23, 42, 0.25) !important;
+}
+
+.theme-light .text-white\/15 {
+  color: rgba(15, 23, 42, 0.2) !important;
+}
+
+.theme-light .text-emerald-200\/90 {
+  color: #047857 !important;
+}
+
+.theme-light .bg-white {
+  background-color: #e2e8f0 !important;
+}
+
+.theme-light .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+.theme-light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.theme-light .bg-white\/15 {
+  background-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.theme-light .bg-white\/20 {
+  background-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+.theme-light .bg-white\/30 {
+  background-color: rgba(15, 23, 42, 0.22) !important;
+}
+
+.theme-light .bg-black\/80 {
+  background-color: rgba(248, 250, 252, 0.95) !important;
+  color: #0f172a !important;
+}
+
+.theme-light .bg-black\/60 {
+  background-color: rgba(15, 23, 42, 0.3) !important;
+}
+
+.theme-light .bg-black\/50 {
+  background-color: rgba(15, 23, 42, 0.25) !important;
+}
+
+.theme-light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.theme-light .border-white\/20 {
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+.theme-light .border-white\/40,
+.theme-light .hover\:border-white\/40:hover,
+.theme-light .focus\:border-white\/40:focus {
+  border-color: rgba(15, 23, 42, 0.35) !important;
+}
+
+.theme-light .hover\:bg-white\/10:hover,
+.theme-light .hover\:bg-white\/15:hover {
+  background-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.theme-light .focus\:bg-white\/10:focus {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+.theme-light .disabled\:bg-white\/5:disabled {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+.theme-light .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+:root[data-theme='dark'] select option {
   background-color: #1a1a1a;
   color: white;
 }
 
-select option:hover {
-  background-color: #333333;
-}
-
-select option:checked {
-  background: linear-gradient(#333333, #333333);
+:root[data-theme='dark'] select option:hover {
   background-color: #333333;
   color: white;
+}
+
+:root[data-theme='dark'] select option:checked {
+  background: linear-gradient(#333333, #333333);
+  color: white;
+}
+
+:root[data-theme='light'] select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+:root[data-theme='light'] select option:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+:root[data-theme='light'] select option:checked {
+  background: linear-gradient(#dbeafe, #dbeafe);
+  color: #0f172a;
 }

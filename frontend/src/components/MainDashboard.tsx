@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "./Card";
 import { ControlToggles, ToggleKey } from "./ControlToggles";
 import { DescriptionBox } from "./DescriptionBox";
@@ -10,9 +10,15 @@ import { PlaylistsList, PlaylistItem } from "./PlaylistsList";
 import { RecommendationsSummary } from "./Recommendations";
 import { MoodType } from "./types/types";
 import UserPanel from "./Auth/UserPanel";
+import { ThemeToggle } from "./ThemeToggle";
+
+type Theme = "dark" | "light";
 
 const gradient =
-  "bg-[radial-gradient(1200px_600px_at_80%_-10%,rgba(99,102,241,0.35),transparent),radial-gradient(1200px_800px_at_-10%_30%,rgba(34,197,94,0.25),transparent),linear-gradient(180deg,rgba(255,255,255,0.05),transparent)]";
+	"bg-[radial-gradient(1300px_700px_at_5%_35%,rgba(16,185,129,0.25),transparent),radial-gradient(1200px_650px_at_85%_-5%,rgba(79,70,229,0.35),transparent),linear-gradient(180deg,#05090f,#020308)]";
+
+const lightGradient =
+	"bg-[radial-gradient(1200px_600px_at_80%_-10%,rgba(79,70,229,0.25),transparent),radial-gradient(1200px_800px_at_-10%_30%,rgba(16,185,129,0.18),transparent),linear-gradient(180deg,rgba(148,163,184,0.35),white)]";
 
 const MODULE_LABELS: Record<Exclude<ToggleKey, null>, string> = {
   description: "Opis",
@@ -20,13 +26,25 @@ const MODULE_LABELS: Record<Exclude<ToggleKey, null>, string> = {
   mood: "Nastrój",
 };
 
+const THEME_STORAGE_KEY = "moodify-theme";
+
 const formatDateTime = (date: Date) =>
   new Intl.DateTimeFormat("pl-PL", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
 
+const getInitialTheme = (): Theme => {
+	if (typeof window === "undefined") {
+		return "dark";
+	}
+
+	const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+	return stored === "light" ? "light" : "dark";
+};
+
 export default function MainDashboard() {
+	const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
   const [selectedModule, setSelectedModule] = useState<ToggleKey>(null);
   const [description, setDescription] = useState("");
   const [selectedMood, setSelectedMood] = useState<MoodType>("Szczęśliwy");
@@ -39,6 +57,20 @@ export default function MainDashboard() {
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+
+	useEffect(() => {
+		document.documentElement.setAttribute("data-theme", theme);
+
+		try {
+			window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+		} catch {
+			// ignore storage errors (e.g., private mode)
+		}
+	}, [theme]);
+
+	const toggleTheme = () => {
+		setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+	};
 
   const handlePhotoUpload = (file: File) => {
     const reader = new FileReader();
@@ -114,7 +146,11 @@ export default function MainDashboard() {
   };
 
   return (
-		<div className={`min-h-screen ${gradient} text-white`}>
+		<div
+			className={`min-h-screen ${
+				theme === "dark" ? gradient : lightGradient
+			} ${theme === "dark" ? "text-white theme-dark" : "text-slate-900 theme-light"} transition-colors duration-300`}
+		>
 			{/* USER PANEL W PRAWYM GÓRNYM ROGU */}
 
 			<div className="mx-auto max-w-6xl px-4 py-8">
@@ -132,7 +168,10 @@ export default function MainDashboard() {
 							</p>
 						</div>
 					</div>
-					<UserPanel />
+					<div className="flex items-center gap-3">
+						<ThemeToggle theme={theme} onToggle={toggleTheme} />
+						<UserPanel />
+					</div>
 				</header>
 
 				<main className="mt-10 space-y-6">
