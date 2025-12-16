@@ -11,6 +11,7 @@ import { RecommendationsSummary } from "./Recommendations";
 import { MoodType } from "./types/types";
 import UserPanel from "./Auth/UserPanel";
 import { ThemeToggle } from "./ThemeToggle";
+import { auth } from "./firebase/firebase";
 
 type Theme = "dark" | "light";
 
@@ -55,6 +56,7 @@ export default function MainDashboard() {
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
+	const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
@@ -73,6 +75,7 @@ export default function MainDashboard() {
 	};
 
   const handlePhotoUpload = (file: File) => {
+		setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       setPhotoPreview(reader.result as string);
@@ -86,14 +89,50 @@ export default function MainDashboard() {
 
     setIsGenerating(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 700));
+		try {
+			if (selectedModule === "camera") {
+				if (!photoFile) return;
 
-    // TODO: Integracja z API (tu po prostu czyszczę, bo usuwamy mocki)
-    setTracks([]);
-    setPlaylists([]);
+				const token = await auth.currentUser?.getIdToken();
+				const formData = new FormData();
+				formData.append("file", photoFile);
 
-    setGeneratedAt(formatDateTime(new Date()));
-    setIsGenerating(false);
+				const resp = await fetch("/api/image/mood/song/", {
+					method: "POST",
+					headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+					body: formData,
+				});
+
+				if (!resp.ok) {
+					const text = await resp.text();
+					throw new Error(text || `HTTP ${resp.status}`);
+				}
+
+				const data = (await resp.json()) as {
+					detected_emotion: string;
+					mood: MoodType;
+					song: { title: string; artist: string; spotify_id?: string };
+				};
+
+				setSelectedMood(data.mood);
+				setTracks([
+					{
+						id: data.song.spotify_id ?? `song_${Date.now()}`,
+						title: data.song.title,
+						artist: data.song.artist,
+						durationMs: 180000,
+					},
+				]);
+				setPlaylists([]);
+			} else {
+				setTracks([]);
+				setPlaylists([]);
+			}
+
+			setGeneratedAt(formatDateTime(new Date()));
+		} finally {
+			setIsGenerating(false);
+		}
   };
 
   const activeModuleLabel = selectedModule
@@ -118,6 +157,7 @@ export default function MainDashboard() {
               onReset={() => {
                 setPhotoPreview(null);
                 setPhotoFileName(null);
+								setPhotoFile(null);
               }}
               disabled={false}
             />

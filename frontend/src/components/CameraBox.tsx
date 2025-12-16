@@ -53,7 +53,7 @@ export const CameraBox: React.FC<CameraBoxProps> = ({
               Dodaj zdjęcie do analizy
             </span>
             <span className="text-xs">
-              Obsługujemy pliki PNG i JPG. Dane nie są nigdzie wysyłane.
+              Obsługujemy pliki PNG i JPG. Zdjęcie zostanie wysłane do analizy.
             </span>
           </button>
         )}
