@@ -1,9 +1,10 @@
 fastapi
 httpx
 uvicorn[standard]
-firebase_admin
+firebase-admin
 tensorflow
 numpy
 pillow
 python-multipart
+python-dotenv
 

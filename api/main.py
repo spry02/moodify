@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import pathlib
+import os
 
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials
 
 from routes.predict import router as predict_router
 from routes.spotify import router as spotify_router
@@ -13,13 +14,14 @@ from routes.mood import router as mood_router
 from routes.health import router as health_router
 
 baseDir = pathlib.Path(__file__).parent.parent
+load_dotenv(baseDir / ".env")
+
 sa_path = baseDir / "service-account.json"
 
 if sa_path.exists():
     cred = credentials.Certificate(str(sa_path))
-    firebase_admin.initialize_app(cred)
-
-load_dotenv(baseDir / ".env")
+    bucket = os.getenv("FIREBASE_STORAGE_BUCKET", "moodify-1c59b.appspot.com")
+    firebase_admin.initialize_app(cred, {"storageBucket": bucket})
 
 app = FastAPI(title="Moodify API", version="0.1.0")
 

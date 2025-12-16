@@ -4,12 +4,16 @@ import json
 import io
 import pathlib
 
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+import firebase_admin
+from firebase_admin import auth as firebase_auth
+
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Header
 import numpy as np
 import tensorflow as tf
 from PIL import Image
 
 from data.mock_songs import MOOD_SONGS
+from services.predictions_csv import append_prediction_csv_row
 
 router = APIRouter(prefix="/api", tags=["predict"])
 
@@ -106,7 +110,9 @@ def predict_emotion_from_image(image_bytes: bytes) -> str:
     summary="Zwraca utwór na podstawie nastroju przewidzianego ze zdjęcia"
 )
 async def get_song_from_image(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    uid: str | None = Form(None),
+    authorization: str | None = Header(None, alias="Authorization"),
 ) -> dict[str, Any]:
     if not file.content_type or not file.content_type.startswith('image/'):
         raise HTTPException(
@@ -122,6 +128,23 @@ async def get_song_from_image(
             detail=f"Błąd podczas wczytywania pliku: {str(e)}"
         )
     
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        try:
+            firebase_admin.get_app()
+            decoded = firebase_auth.verify_id_token(token)
+            uid = str(decoded.get("uid"))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Firebase Admin nie jest skonfigurowany na serwerze",
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Nieprawidłowy token użytkownika",
+            )
+
     emotion = predict_emotion_from_image(image_bytes)
     
     mood = EMOTION_TO_MOOD.get(emotion, "Szczęśliwy")
@@ -134,6 +157,15 @@ async def get_song_from_image(
         )
     
     selected_song = random.choice(songs)
+
+    if uid:
+        try:
+            append_prediction_csv_row(uid=uid, detected_emotion=emotion, mood=mood)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Nie udało się zapisać historii predykcji: {str(e)}",
+            )
     
     return {
         "detected_emotion": emotion,
