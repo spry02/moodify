@@ -12,6 +12,7 @@ from routes.spotify import router as spotify_router
 from routes.auth import router as auth_router
 from routes.mood import router as mood_router
 from routes.health import router as health_router
+from routes.getters import router as getter_router
 
 baseDir = pathlib.Path(__file__).parent.parent
 load_dotenv(baseDir / ".env")
@@ -22,6 +23,7 @@ if sa_path.exists():
     cred = credentials.Certificate(str(sa_path))
     bucket = os.getenv("FIREBASE_STORAGE_BUCKET", "moodify-1c59b.appspot.com")
     firebase_admin.initialize_app(cred, {"storageBucket": bucket})
+    print("Firebase initialized.")
 
 app = FastAPI(title="Moodify API", version="0.1.0")
 
@@ -38,3 +40,4 @@ app.include_router(spotify_router)
 app.include_router(auth_router)
 app.include_router(mood_router)
 app.include_router(predict_router)
+app.include_router(getter_router)

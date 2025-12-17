@@ -3,8 +3,10 @@ import random
 import json
 import io
 import pathlib
+import datetime
 
 import firebase_admin
+from firebase_admin import firestore
 from firebase_admin import auth as firebase_auth
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Header
@@ -158,13 +160,36 @@ async def get_song_from_image(
     
     selected_song = random.choice(songs)
 
+    # TODO
+    # DO NAPRAWIENIA WYPIERDALA BLAD I CHUJ 
+    # 
+    # if uid:
+    #     try:
+    #         print("Appending prediction to CSV for user:", uid, "emotion:", emotion, "mood:", mood)
+    #         append_prediction_csv_row(uid=uid, detected_emotion=emotion, mood=mood)
+    #     except Exception as e:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail=f"Nie udało się zapisać historii predykcji: {str(e)}",
+    #         )
+
     if uid:
         try:
-            append_prediction_csv_row(uid=uid, detected_emotion=emotion, mood=mood)
+            date = datetime.datetime.now()
+            selected_song['date'] = f"{date.day}-{date.month}-{date.year}T{date.hour}:{date.minute}:{date.second}"
+            mood_data = {
+                "detected_emotion": emotion,
+                "mood": mood,
+                "song": selected_song,
+                "generated_at": firestore.SERVER_TIMESTAMP
+            }
+            print(selected_song)
+            from services.firebase import save_mood_to_firestore
+            save_mood_to_firestore(uid, mood_data)
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Nie udało się zapisać historii predykcji: {str(e)}",
+                detail=f"Nie udało się zapisać historii nastroju: {str(e)}",
             )
     
     return {
