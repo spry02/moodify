@@ -84,6 +84,45 @@ export default function MainDashboard() {
     reader.readAsDataURL(file);
   };
 
+  const getTracksfromDB = async () => {
+	if (!auth.currentUser) return [];
+
+	const token = await auth.currentUser?.getIdToken();
+	const formData = new FormData();
+
+	formData.append("uid", token);
+
+	const resp = await fetch("/api/getters/tracks/", {
+		method: "POST",
+		headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+		body: formData,
+	});
+
+	console.log(resp)
+
+	if (!resp.ok) {
+		console.log("HERE")
+		const text = await resp.text();
+		throw new Error(text || `HTTP ${resp.status}`);
+	}
+	
+	const data = (await resp.json());
+
+	console.log(data);
+
+	const dbTracks = []
+
+	for (const [key, value] of Object.entries(data)) {
+		value['id'] = key
+		// console.log(value)
+		dbTracks.push(value)
+	}
+
+	// console.log(dbTracks)
+	setPlaylists(dbTracks)
+
+  }
+
   const handleGenerate = async () => {
     if (!selectedModule) return;
 
@@ -123,7 +162,7 @@ export default function MainDashboard() {
 						durationMs: 180000,
 					},
 				]);
-				setPlaylists([]);
+				// setPlaylists([]);
 			} else {
 				setTracks([]);
 				setPlaylists([]);
@@ -134,6 +173,18 @@ export default function MainDashboard() {
 			setIsGenerating(false);
 		}
   };
+
+//	HIDDEN FUNC TO LOAD LAST GENERATED DATA FROM DB
+  useEffect(() => {
+    (async () => {
+      try {
+        const dbTracks = await getTracksfromDB();
+        // console.log(dbTracks)
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
 
   const activeModuleLabel = selectedModule
     ? MODULE_LABELS[selectedModule]
@@ -275,13 +326,15 @@ export default function MainDashboard() {
 								<SongsList tracks={tracks} />
 							</Card>
 
-							<Card title="Propozycje playlist">
+							<Card title="Poprzednie utwory">
 								<PlaylistsList items={playlists} />
 							</Card>
-						</div>
+						</div>	
+						
 					</div>
 				</main>
 			</div>
 		</div>
 	);
+	
 }
