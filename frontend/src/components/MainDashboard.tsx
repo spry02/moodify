@@ -8,6 +8,7 @@ import { GenerateButton } from "./GenerateButton";
 import { SongsList, TrackItem } from "./SongsList";
 import { PlaylistsList, PlaylistItem } from "./PlaylistsList";
 import { RecommendationsSummary } from "./Recommendations";
+import { AnalysisResult } from "./AnalysisResult";
 import { MoodType } from "./types/types";
 import UserPanel from "./Auth/UserPanel";
 import { ThemeToggle } from "./ThemeToggle";
@@ -49,6 +50,8 @@ export default function MainDashboard() {
   const [selectedModule, setSelectedModule] = useState<ToggleKey>(null);
   const [description, setDescription] = useState("");
   const [selectedMood, setSelectedMood] = useState<MoodType>("Szczęśliwy");
+	const [analysisMood, setAnalysisMood] = useState<MoodType | null>(null);
+	const [analysisSourceLabel, setAnalysisSourceLabel] = useState<string | null>(null);
 
   // Po usunięciu mocków - teraz są puste dopóki API nie zwróci danych
   const [tracks, setTracks] = useState<TrackItem[]>([]);
@@ -57,6 +60,7 @@ export default function MainDashboard() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
 	const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [detectedEmotion, setDetectedEmotion] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
@@ -87,39 +91,42 @@ export default function MainDashboard() {
   const getTracksfromDB = async () => {
 	if (!auth.currentUser) return [];
 
-	const token = await auth.currentUser?.getIdToken();
-	const formData = new FormData();
+	const uid = auth.currentUser.uid;
+	const token = await auth.currentUser.getIdToken().catch(() => null);
 
-	formData.append("uid", token);
-
-	const resp = await fetch("/api/getters/tracks/", {
+	// Prefer the local-history endpoint for a reliable dev experience.
+	const resp = await fetch("/api/history/items/", {
 		method: "POST",
-		headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-		body: formData,
+		headers: {
+			"Content-Type": "application/json",
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
+		},
+		body: JSON.stringify({ uid, limit: 30 }),
 	});
 
-	console.log(resp)
-
 	if (!resp.ok) {
-		console.log("HERE")
 		const text = await resp.text();
 		throw new Error(text || `HTTP ${resp.status}`);
 	}
-	
-	const data = (await resp.json());
 
-	console.log(data);
+	const items = (await resp.json()) as Array<{
+		timestamp_utc: string;
+		title: string;
+		artist: string;
+		spotify_id?: string;
+		source?: string;
+		mood?: string;
+		detected_emotion?: string;
+	}>;
 
-	const dbTracks = []
-
-	for (const [key, value] of Object.entries(data)) {
-		value['id'] = key
-		// console.log(value)
-		dbTracks.push(value)
-	}
-
-	// console.log(dbTracks)
-	setPlaylists(dbTracks)
+	setPlaylists(
+		items.map((it, idx) => ({
+			id: it.spotify_id || `hist_${idx}_${Date.now()}`,
+			title: it.title,
+			artist: it.artist,
+			date: String(it.timestamp_utc || ""),
+		}))
+	);
 
   }
 
@@ -133,8 +140,10 @@ export default function MainDashboard() {
 				if (!photoFile) return;
 
 				const token = await auth.currentUser?.getIdToken();
+				const uid = auth.currentUser?.uid;
 				const formData = new FormData();
 				formData.append("file", photoFile);
+				if (uid) formData.append("uid", uid);
 
 				const resp = await fetch("/api/image/mood/song/", {
 					method: "POST",
@@ -153,7 +162,9 @@ export default function MainDashboard() {
 					song: { title: string; artist: string; spotify_id?: string };
 				};
 
-				setSelectedMood(data.mood);
+				setDetectedEmotion(data.detected_emotion);
+				setAnalysisMood(data.mood);
+				setAnalysisSourceLabel("Analiza zdjęcia");
 				setTracks([
 					{
 						id: data.song.spotify_id ?? `song_${Date.now()}`,
@@ -163,12 +174,82 @@ export default function MainDashboard() {
 					},
 				]);
 				// setPlaylists([]);
+			} else if (selectedModule === "mood") {
+				// Manual mood selection -> get a song for the selected mood
+				setDetectedEmotion(null);
+				setAnalysisMood(selectedMood);
+				setAnalysisSourceLabel("Wybór nastroju");
+				const uid = auth.currentUser?.uid ?? null;
+
+				const resp = await fetch("/api/mood/song/", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ mood: selectedMood, uid }),
+				});
+
+				if (!resp.ok) {
+					const text = await resp.text();
+					throw new Error(text || `HTTP ${resp.status}`);
+				}
+
+				const data = (await resp.json()) as {
+					mood: MoodType;
+					song: { title: string; artist: string; spotify_id?: string };
+				};
+
+				setTracks([
+					{
+						id: data.song.spotify_id ?? `song_${Date.now()}`,
+						title: data.song.title,
+						artist: data.song.artist,
+						durationMs: 180000,
+					},
+				]);
+			} else if (selectedModule === "description") {
+				// Text description -> predict mood -> song
+				setDetectedEmotion(null);
+				setAnalysisSourceLabel("Analiza opisu");
+				const uid = auth.currentUser?.uid ?? null;
+
+				const resp = await fetch("/api/text/mood/song/", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ text: description, uid }),
+				});
+
+				if (!resp.ok) {
+					const text = await resp.text();
+					throw new Error(text || `HTTP ${resp.status}`);
+				}
+
+				const data = (await resp.json()) as {
+					mood: MoodType;
+					song: { title: string; artist: string; spotify_id?: string };
+				};
+
+				setAnalysisMood(data.mood);
+				setTracks([
+					{
+						id: data.song.spotify_id ?? `song_${Date.now()}`,
+						title: data.song.title,
+						artist: data.song.artist,
+						durationMs: 180000,
+					},
+				]);
 			} else {
 				setTracks([]);
 				setPlaylists([]);
+				setDetectedEmotion(null);
+				setAnalysisMood(null);
+				setAnalysisSourceLabel(null);
 			}
 
 			setGeneratedAt(formatDateTime(new Date()));
+			try {
+				await getTracksfromDB();
+			} catch {
+				// ignore history refresh errors
+			}
 		} finally {
 			setIsGenerating(false);
 		}
@@ -209,6 +290,10 @@ export default function MainDashboard() {
                 setPhotoPreview(null);
                 setPhotoFileName(null);
 								setPhotoFile(null);
+								setDetectedEmotion(null);
+							setAnalysisMood(null);
+							setAnalysisSourceLabel(null);
+							setTracks([]);
               }}
               disabled={false}
             />
@@ -311,13 +396,25 @@ export default function MainDashboard() {
 						</div>
 					</Card>
 
+					{/* Wynik Analizy */}
+					{analysisMood && tracks.length > 0 && (
+						<AnalysisResult
+							detectedEmotion={detectedEmotion}
+							assignedMood={analysisMood}
+							songTitle={tracks[0].title}
+							songArtist={tracks[0].artist}
+							sourceLabel={analysisSourceLabel ?? undefined}
+						/>
+					)}
+
 					<div className="space-y-5">
 						<Card title="Podsumowanie analizy" className="lg:p-7">
 							<RecommendationsSummary
-								mood={selectedMood}
+								mood={analysisMood ?? selectedMood}
 								description={description}
 								tracksCount={tracks.length}
 								generated={generatedAt}
+								detectedEmotion={detectedEmotion}
 							/>
 						</Card>
 

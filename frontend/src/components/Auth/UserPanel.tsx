@@ -9,10 +9,13 @@ import {
 	EmailAuthProvider,
 } from "firebase/auth";
 
+import { ProfileModal } from "./ProfileModal";
+
 export default function UserPanel() {
 	const [username, setUsername] = useState("...");
 	const [open, setOpen] = useState(false);
 	const [showReauth, setShowReauth] = useState(false);
+	const [showProfile, setShowProfile] = useState(false);
 	const [password, setPassword] = useState("");
 	const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -112,6 +115,16 @@ export default function UserPanel() {
 				>
 					<button
 						className="block w-full text-left p-2 rounded hover:bg-white/20"
+						onClick={() => {
+							setOpen(false);
+							setShowProfile(true);
+						}}
+					>
+						📈 Profil
+					</button>
+
+					<button
+						className="block w-full text-left p-2 rounded hover:bg-white/20"
 						onClick={handleLogout}
 					>
 						🔓 Wyloguj
@@ -128,6 +141,8 @@ export default function UserPanel() {
 					</button>
 				</div>
 			)}
+
+			<ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
 
 			{/* REAUTH MODAL */}
 			{showReauth && (

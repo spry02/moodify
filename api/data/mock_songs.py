@@ -14,26 +14,26 @@ MOOD_SONGS = {
         {"title": "The Sound of Silence", "artist": "Simon & Garfunkel", "spotify_id": "mock_9"},
         {"title": "Mad World", "artist": "Gary Jules", "spotify_id": "mock_10"},
     ],
-    "Zestresowany": [
-        {"title": "Weightless", "artist": "Marconi Union", "spotify_id": "mock_11"},
-        {"title": "Strawberry Swing", "artist": "Coldplay", "spotify_id": "mock_12"},
-        {"title": "Watermark", "artist": "Enya", "spotify_id": "mock_13"},
-        {"title": "Mellomaniac", "artist": "DJ Shah", "spotify_id": "mock_14"},
-        {"title": "Electra", "artist": "Airstream", "spotify_id": "mock_15"},
-    ],
     "Spokojny": [
+        {"title": "Weightless", "artist": "Marconi Union", "spotify_id": "mock_11"},
         {"title": "Clair de Lune", "artist": "Claude Debussy", "spotify_id": "mock_16"},
-        {"title": "Weightless", "artist": "Marconi Union", "spotify_id": "mock_17"},
         {"title": "Gymnopédie No.1", "artist": "Erik Satie", "spotify_id": "mock_18"},
         {"title": "River Flows in You", "artist": "Yiruma", "spotify_id": "mock_19"},
-        {"title": "Comptine d'un autre été", "artist": "Yann Tiersen", "spotify_id": "mock_20"},
+        {"title": "Watermark", "artist": "Enya", "spotify_id": "mock_13"},
     ],
-    "Zmęczony": [
-        {"title": "Dreams", "artist": "Fleetwood Mac", "spotify_id": "mock_21"},
-        {"title": "The Night We Met", "artist": "Lord Huron", "spotify_id": "mock_22"},
-        {"title": "Holocene", "artist": "Bon Iver", "spotify_id": "mock_23"},
-        {"title": "Skinny Love", "artist": "Bon Iver", "spotify_id": "mock_24"},
-        {"title": "To Build a Home", "artist": "The Cinematic Orchestra", "spotify_id": "mock_25"},
+    "Energiczny": [
+        {"title": "Eye of the Tiger", "artist": "Survivor", "spotify_id": "mock_21"},
+        {"title": "Thunder", "artist": "Imagine Dragons", "spotify_id": "mock_22"},
+        {"title": "Stronger", "artist": "Kanye West", "spotify_id": "mock_23"},
+        {"title": "Radioactive", "artist": "Imagine Dragons", "spotify_id": "mock_24"},
+        {"title": "Till I Collapse", "artist": "Eminem", "spotify_id": "mock_25"},
+    ],
+    "Zaskoczony": [
+        {"title": "Bohemian Rhapsody", "artist": "Queen", "spotify_id": "mock_26"},
+        {"title": "Uptown Funk", "artist": "Mark Ronson ft. Bruno Mars", "spotify_id": "mock_27"},
+        {"title": "September", "artist": "Earth, Wind & Fire", "spotify_id": "mock_28"},
+        {"title": "Mr. Blue Sky", "artist": "Electric Light Orchestra", "spotify_id": "mock_29"},
+        {"title": "Don't Stop Me Now", "artist": "Queen", "spotify_id": "mock_30"},
     ],
 }
 

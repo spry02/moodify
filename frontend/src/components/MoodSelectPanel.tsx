@@ -10,9 +10,9 @@ interface MoodSelectPanelProps {
 const MOODS: MoodType[] = [
 	"Szczęśliwy",
 	"Smutny",
-	"Zestresowany",
 	"Spokojny",
-	"Zmęczony",
+	"Energiczny",
+	"Zaskoczony",
 ];
 
 export const MoodSelectPanel: React.FC<MoodSelectPanelProps> = ({

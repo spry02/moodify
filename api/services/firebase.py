@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+import os
 
 import httpx
 from firebase_admin import auth, firestore
@@ -22,7 +23,7 @@ def log_into_firebase(email: str, password: str) -> None:
     Requires environment variable `FIREBASE_API_KEY` set to the project's Web API Key.
     Returns the parsed JSON response from the Identity Toolkit endpoint.
     """
-    api_key = "AIzaSyBVIpzHSETzGNIVN7kj6kp4pGIbun_OqRU"
+    api_key = os.getenv("FIREBASE_API_KEY")
     if not api_key:
         raise RuntimeError("FIREBASE_API_KEY is not set in environment")
 

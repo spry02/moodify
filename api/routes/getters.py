@@ -16,30 +16,36 @@ class SongsRequest(BaseModel):
 @router.post("/getters/tracks/", summary="Zwraca utwory z bazy danych")
 async def get_mood_song(uid: str | None = Form(None),
                         authorization: str | None = Header(None, alias="Authorization"),) -> dict[str, Any]:
-
+    # Only allow access to history when token verification succeeds.
+    # If Firebase Admin isn't configured locally, return empty history.
+    uid = None
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization.split(" ", 1)[1].strip()
         try:
-            firebase_admin.get_app()
             decoded = firebase_auth.verify_id_token(token)
             uid = str(decoded.get("uid"))
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Firebase Admin nie jest skonfigurowany na serwerze",
-            )
+            uid = None
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Nieprawidłowy token użytkownika",
-            )
+            try:
+                firebase_admin.get_app()
+            except ValueError:
+                uid = None
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Nieprawidłowy token użytkownika",
+                )
+
+    if not uid:
+        return {}
 
     try:
-        if uid:
-            from services.firebase import get_tracks_history_from_firestore
-            return get_tracks_history_from_firestore(uid)
-            
+        from services.firebase import get_tracks_history_from_firestore
+        result = get_tracks_history_from_firestore(uid)
+        return result or {}
     except Exception as e:
         print(f"Error occured while getting: {e}")
+        return {}
 
 

@@ -26,9 +26,9 @@ EMOTION_MAP_PATH = baseDir / "backend" / "saved_models" / "image_emotion_map.jso
 EMOTION_TO_MOOD = {
     "Szczęście": "Szczęśliwy",
     "Smutek": "Smutny",
-    "Strach": "Zestresowany",
-    "Złość": "Zestresowany",
-    "Zaskoczenie": "Spokojny",
+    "Strach": "Spokojny",
+    "Złość": "Energiczny",
+    "Zaskoczenie": "Zaskoczony",
 }
 
 _image_model = None
@@ -39,12 +39,16 @@ def load_image_model():
     global _image_model, _emotion_map
     
     if _image_model is None:
+        print(f"🔍 Szukam modelu w: {MODEL_PATH}")
+        print(f"📂 Model exists: {MODEL_PATH.exists()}")
+        
         if not MODEL_PATH.exists():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Model obrazowy nie został znaleziony"
+                detail=f"Model obrazowy nie został znaleziony w: {MODEL_PATH}"
             )
         
+        print("⏳ Ładuję model...")
         import warnings
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=UserWarning)
@@ -69,15 +73,20 @@ def load_image_model():
             ])
             
             _image_model.load_weights(str(MODEL_PATH), by_name=True, skip_mismatch=True)
+            print("✅ Model załadowany!")
     
     if _emotion_map is None:
+        print(f"🔍 Szukam mapy emocji w: {EMOTION_MAP_PATH}")
+        print(f"📂 Map exists: {EMOTION_MAP_PATH.exists()}")
+        
         if not EMOTION_MAP_PATH.exists():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Mapa emocji nie została znaleziona"
+                detail=f"Mapa emocji nie została znaleziona w: {EMOTION_MAP_PATH}"
             )
         with open(EMOTION_MAP_PATH, 'r', encoding='utf-8') as f:
             _emotion_map = {int(k): v for k, v in json.load(f).items()}
+        print(f"✅ Mapa emocji załadowana: {_emotion_map}")
     
     return _image_model, _emotion_map
 
@@ -97,10 +106,15 @@ def predict_emotion_from_image(image_bytes: bytes) -> str:
         if isinstance(prediction, tf.Tensor):
             prediction = prediction.numpy()
         
+        print(f"📊 Predykcja (raw): {prediction[0]}")
         predicted_idx = np.argmax(prediction[0])
+        print(f"🎯 Przewidziany index: {predicted_idx}")
         emotion = emotion_map.get(predicted_idx, "Szczęście")
+        print(f"😊 Wykryta emocja: {emotion}")
+        
         return emotion
     except Exception as e:
+        print(f"❌ Błąd predykcji: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Błąd podczas przetwarzania obrazu: {str(e)}"
@@ -130,22 +144,33 @@ async def get_song_from_image(
             detail=f"Błąd podczas wczytywania pliku: {str(e)}"
         )
     
+    # Auth is optional for prediction.
+    # If Firebase Admin isn't configured locally, we can still accept `uid` from the form
+    # to enable local history per-user.
+    provided_uid = uid
+    uid = None
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization.split(" ", 1)[1].strip()
         try:
-            firebase_admin.get_app()
             decoded = firebase_auth.verify_id_token(token)
             uid = str(decoded.get("uid"))
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Firebase Admin nie jest skonfigurowany na serwerze",
-            )
+            # Firebase app not initialized (e.g. missing service-account.json).
+            # Continue without uid.
+            uid = None
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Nieprawidłowy token użytkownika",
-            )
+            # If Firebase is configured and token is bad, treat as unauthorized.
+            # If Firebase isn't configured, verify_id_token can also fail; in that
+            # case we still allow anonymous prediction.
+            try:
+                firebase_admin.get_app()
+            except ValueError:
+                uid = None
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Nieprawidłowy token użytkownika",
+                )
 
     emotion = predict_emotion_from_image(image_bytes)
     
@@ -159,6 +184,22 @@ async def get_song_from_image(
         )
     
     selected_song = random.choice(songs)
+
+    # Local history (works without Firebase)
+    try:
+        from services.local_history import append_history_item
+
+        history_uid = uid or provided_uid
+        if history_uid:
+            append_history_item(
+                uid=history_uid,
+                source="camera",
+                mood=mood,
+                detected_emotion=emotion,
+                song=selected_song,
+            )
+    except Exception as e:
+        print(f"⚠️ Nie udało się zapisać lokalnej historii: {str(e)}")
 
     # TODO
     # DO NAPRAWIENIA WYPIERDALA BLAD I CHUJ 
@@ -187,10 +228,8 @@ async def get_song_from_image(
             from services.firebase import save_mood_to_firestore
             save_mood_to_firestore(uid, mood_data)
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Nie udało się zapisać historii nastroju: {str(e)}",
-            )
+            # Saving history should never break prediction.
+            print(f"⚠️ Nie udało się zapisać historii nastroju: {str(e)}")
     
     return {
         "detected_emotion": emotion,

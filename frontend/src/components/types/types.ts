@@ -8,4 +8,4 @@ export interface Mood {
   timestamp: number;
 }
 
-export type MoodType = 'Szczęśliwy' | 'Smutny' | 'Zestresowany' | 'Spokojny' | 'Zmęczony';
+export type MoodType = 'Szczęśliwy' | 'Smutny' | 'Spokojny' | 'Energiczny' | 'Zaskoczony';

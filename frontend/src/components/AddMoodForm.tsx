@@ -5,9 +5,9 @@ import { mockAddMoodApi } from "./api/api";
 const MOOD_OPTIONS: MoodType[] = [
 	"Szczęśliwy",
 	"Smutny",
-	"Zestresowany",
 	"Spokojny",
-	"Zmęczony",
+	"Energiczny",
+	"Zaskoczony",
 ];
 
 interface AddMoodFormProps {

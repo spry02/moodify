@@ -6,6 +6,7 @@ interface RecommendationSummaryProps {
   description: string;
   tracksCount: number;
   generated: string | null;
+  detectedEmotion?: string | null;
 }
 
 export const RecommendationsSummary: React.FC<RecommendationSummaryProps> = ({
@@ -13,6 +14,7 @@ export const RecommendationsSummary: React.FC<RecommendationSummaryProps> = ({
   description,
   tracksCount,
   generated,
+  detectedEmotion,
 }) => {
   const summary = description
     ? description.slice(0, 120) + (description.length > 120 ? "…" : "")
