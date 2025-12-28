@@ -10,9 +10,6 @@ from firebase_admin import firestore
 from firebase_admin import auth as firebase_auth
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Header
-import numpy as np
-import tensorflow as tf
-from PIL import Image
 
 from data.mock_songs import MOOD_SONGS
 from services.predictions_csv import append_prediction_csv_row
@@ -37,6 +34,14 @@ _emotion_map = None
 
 def load_image_model():
     global _image_model, _emotion_map
+
+    try:
+        import tensorflow as tf  # noqa: F401
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="TensorFlow nie jest zainstalowany. Zainstaluj zależności backendu, aby używać analizy zdjęć.",
+        ) from e
     
     if _image_model is None:
         print(f"🔍 Szukam modelu w: {MODEL_PATH}")
@@ -93,6 +98,15 @@ def load_image_model():
 
 def predict_emotion_from_image(image_bytes: bytes) -> str:
     try:
+        try:
+            import numpy as np
+            from PIL import Image
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Brak zależności do analizy zdjęć (numpy/pillow). Zainstaluj zależności backendu.",
+            ) from e
+
         image = Image.open(io.BytesIO(image_bytes))
         image = image.convert('RGB')
         image = image.resize((224, 224))
@@ -103,7 +117,8 @@ def predict_emotion_from_image(image_bytes: bytes) -> str:
         model, emotion_map = load_image_model()
         
         prediction = model(img_array, training=False)
-        if isinstance(prediction, tf.Tensor):
+        # TensorFlow Tensor has .numpy(); keep this import-free.
+        if hasattr(prediction, "numpy"):
             prediction = prediction.numpy()
         
         print(f"📊 Predykcja (raw): {prediction[0]}")

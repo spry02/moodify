@@ -34,6 +34,7 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({
   sourceLabel,
 }) => {
   const emotionAvailable = Boolean(detectedEmotion);
+  const resolvedSourceLabel = sourceLabel ? sourceLabel : "Analiza";
 
   return (
     <div className="rounded-3xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 via-emerald-400/10 to-transparent p-6 shadow-lg backdrop-blur">
@@ -62,13 +63,13 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({
                   {EMOTION_EMOJI[String(detectedEmotion)] || "🤔"}
                 </div>
                 <p className="text-2xl font-bold text-white">{detectedEmotion}</p>
-                <p className="text-xs text-white/60 mt-1">z analizy zdjęcia</p>
+                <p className="text-xs text-white/60 mt-1">{resolvedSourceLabel}</p>
               </>
             ) : (
               <>
                 <div className="text-5xl mb-2">📝</div>
                 <p className="text-xl font-bold text-white">
-                  {sourceLabel ? sourceLabel : "Analiza"}
+                  {resolvedSourceLabel}
                 </p>
                 <p className="text-xs text-white/60 mt-1">bez wykrytej emocji</p>
               </>

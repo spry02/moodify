@@ -223,10 +223,12 @@ export default function MainDashboard() {
 				}
 
 				const data = (await resp.json()) as {
+					detected_emotion?: string | null;
 					mood: MoodType;
 					song: { title: string; artist: string; spotify_id?: string };
 				};
 
+				setDetectedEmotion(data.detected_emotion ?? null);
 				setAnalysisMood(data.mood);
 				setTracks([
 					{
