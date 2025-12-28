@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Mood } from '../types';
-import { mockGetMoodsApi, mockDeleteMoodApi } from '../api';
+import { Mood } from './types/types';
+import { mockGetMoodsApi, mockDeleteMoodApi } from './api/api';
 
 interface MoodsListProps {
   refreshTrigger: number;
