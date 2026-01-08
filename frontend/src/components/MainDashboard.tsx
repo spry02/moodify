@@ -95,7 +95,7 @@ export default function MainDashboard() {
 	const uid = auth.currentUser.uid;
 	const token = await auth.currentUser.getIdToken().catch(() => null);
 
-	// Prefer the local-history endpoint for a reliable dev experience.
+	// Fetch history from Firebase via the API.
 	const resp = await fetch("/api/history/items/", {
 		method: "POST",
 		headers: {

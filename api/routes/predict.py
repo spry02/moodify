@@ -1,4 +1,4 @@
-from typing import Any
+﻿from typing import Any
 import random
 import json
 import io
@@ -161,7 +161,7 @@ async def get_song_from_image(
     
     # Auth is optional for prediction.
     # If Firebase Admin isn't configured locally, we can still accept `uid` from the form
-    # to enable local history per-user.
+    # to save history to Firebase in dev.
     provided_uid = uid
     uid = None
     if authorization and authorization.lower().startswith("bearer "):
@@ -187,6 +187,9 @@ async def get_song_from_image(
                     detail="Nieprawidłowy token użytkownika",
                 )
 
+    if not uid:
+        uid = provided_uid
+
     emotion = predict_emotion_from_image(image_bytes)
     
     mood = EMOTION_TO_MOOD.get(emotion, "Szczęśliwy")
@@ -200,21 +203,6 @@ async def get_song_from_image(
     
     selected_song = random.choice(songs)
 
-    # Local history (works without Firebase)
-    try:
-        from services.local_history import append_history_item
-
-        history_uid = uid or provided_uid
-        if history_uid:
-            append_history_item(
-                uid=history_uid,
-                source="camera",
-                mood=mood,
-                detected_emotion=emotion,
-                song=selected_song,
-            )
-    except Exception as e:
-        print(f"⚠️ Nie udało się zapisać lokalnej historii: {str(e)}")
 
     # TODO
     # DO NAPRAWIENIA WYPIERDALA BLAD I CHUJ 
@@ -236,6 +224,7 @@ async def get_song_from_image(
             mood_data = {
                 "detected_emotion": emotion,
                 "mood": mood,
+                "source": "camera",
                 "song": selected_song,
                 "generated_at": firestore.SERVER_TIMESTAMP
             }
@@ -251,4 +240,6 @@ async def get_song_from_image(
         "mood": mood,
         "song": selected_song
     }
+
+
 

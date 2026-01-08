@@ -1,4 +1,4 @@
-from typing import Any
+﻿from typing import Any
 from functools import lru_cache
 from pathlib import Path
 import random
@@ -6,6 +6,7 @@ import re
 import unicodedata
 
 from fastapi import APIRouter, HTTPException, status
+from firebase_admin import firestore
 from pydantic import BaseModel
 
 from data.mock_songs import MOOD_SONGS
@@ -164,19 +165,19 @@ async def get_mood_song(req: MoodRequest) -> dict[str, Any]:
     
     selected_song = random.choice(songs)
 
-    try:
-        from services.local_history import append_history_item
-
-        if req.uid:
-            append_history_item(
-                uid=req.uid,
-                source="mood",
-                mood=req.mood,
-                detected_emotion=None,
-                song=selected_song,
-            )
-    except Exception as e:
-        print(f"⚠️ Nie udało się zapisać lokalnej historii: {str(e)}")
+    if req.uid:
+        try:
+            mood_data = {
+                "detected_emotion": None,
+                "mood": req.mood,
+                "source": "mood",
+                "song": selected_song,
+                "generated_at": firestore.SERVER_TIMESTAMP,
+            }
+            from services.firebase import save_mood_to_firestore
+            save_mood_to_firestore(req.uid, mood_data)
+        except Exception as e:
+            print(f"Nie udalo sie zapisac historii w Firebase: {str(e)}")
 
     return {"mood": req.mood, "song": selected_song}
 
@@ -200,19 +201,20 @@ async def get_song_from_text(req: TextMoodRequest) -> dict[str, Any]:
 
     selected_song = random.choice(songs)
 
-    try:
-        from services.local_history import append_history_item
-
-        if req.uid:
-            append_history_item(
-                uid=req.uid,
-                source="description",
-                mood=mood,
-                detected_emotion=detected_emotion,
-                song=selected_song,
-            )
-    except Exception as e:
-        print(f"⚠️ Nie udało się zapisać lokalnej historii: {str(e)}")
+    if req.uid:
+        try:
+            mood_data = {
+                "detected_emotion": detected_emotion,
+                "mood": mood,
+                "source": "description",
+                "song": selected_song,
+                "generated_at": firestore.SERVER_TIMESTAMP,
+            }
+            from services.firebase import save_mood_to_firestore
+            save_mood_to_firestore(req.uid, mood_data)
+        except Exception as e:
+            print(f"Nie udalo sie zapisac historii w Firebase: {str(e)}")
 
     return {"detected_emotion": detected_emotion, "mood": mood, "song": selected_song}
+
 

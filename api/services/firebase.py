@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from datetime import datetime, timezone
 import os
 
 import httpx
@@ -66,3 +67,88 @@ def get_tracks_history_from_firestore(uid: str) -> Optional[Dict[str, Any]]:
         return songlist
     except Exception as e:
         print(f"Error getting records: {e}")
+
+
+def _format_timestamp(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        ts = value
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        return ts.astimezone(timezone.utc).isoformat()
+    if hasattr(value, "to_datetime"):
+        try:
+            ts = value.to_datetime()
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            return ts.astimezone(timezone.utc).isoformat()
+        except Exception:
+            pass
+    return str(value)
+
+
+def _history_item_from_doc(doc) -> Dict[str, Any]:
+    data = doc.to_dict() or {}
+    song = data.get("song") or {}
+    if not isinstance(song, dict):
+        song = {}
+
+    timestamp_value = data.get("generated_at") or song.get("date") or getattr(doc, "create_time", None)
+
+    return {
+        "timestamp_utc": _format_timestamp(timestamp_value),
+        "source": str(data.get("source") or ""),
+        "mood": str(data.get("mood") or ""),
+        "detected_emotion": str(data.get("detected_emotion") or ""),
+        "title": str(song.get("title") or ""),
+        "artist": str(song.get("artist") or ""),
+        "spotify_id": str(song.get("spotify_id") or ""),
+    }
+
+
+def get_history_items_from_firestore(uid: str, limit: int | None = None) -> list[Dict[str, Any]]:
+    db = firestore.client()
+    moods_ref = db.collection("users").document(uid).collection("moods")
+
+    docs = []
+    try:
+        query = moods_ref.order_by("generated_at", direction=firestore.Query.DESCENDING)
+        if limit is not None:
+            query = query.limit(limit)
+        docs = list(query.stream())
+    except Exception:
+        docs = list(moods_ref.stream())
+        docs.sort(key=lambda d: getattr(d, "create_time", None), reverse=True)
+        if limit is not None:
+            docs = docs[: max(0, limit)]
+
+    return [_history_item_from_doc(doc) for doc in docs]
+
+
+def summarize_history_from_firestore(uid: str, recent_limit: int = 20) -> Dict[str, Any]:
+    items = get_history_items_from_firestore(uid, limit=None)
+
+    mood_counts: Dict[str, int] = {}
+    song_counts: Dict[str, int] = {}
+
+    for it in items:
+        mood = it.get("mood") or ""
+        if mood:
+            mood_counts[mood] = mood_counts.get(mood, 0) + 1
+
+        title = it.get("title") or ""
+        artist = it.get("artist") or ""
+        label = " - ".join([part for part in [title, artist] if part]).strip()
+        if label:
+            song_counts[label] = song_counts.get(label, 0) + 1
+
+    recent = items[: max(0, recent_limit)]
+    top_songs = sorted(song_counts.items(), key=lambda kv: kv[1], reverse=True)[:10]
+
+    return {
+        "total": len(items),
+        "mood_counts": mood_counts,
+        "top_songs": [{"label": k, "count": v} for k, v in top_songs],
+        "recent": recent,
+    }
