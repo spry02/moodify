@@ -13,6 +13,7 @@ import { MoodType } from "./types/types";
 import UserPanel from "./Auth/UserPanel";
 import { ThemeToggle } from "./ThemeToggle";
 import { auth } from "./firebase/firebase";
+import logo from "./assets/logo.png";
 
 type Theme = "dark" | "light";
 
@@ -334,8 +335,8 @@ export default function MainDashboard() {
 			<div className="mx-auto max-w-6xl px-4 py-8">
 				<header className="flex items-center justify-between">
 					<div className="flex items-center gap-3">
-						<div className="grid h-9 w-9 place-items-center rounded-xl border border-white/20 bg-white/10">
-							<span className="text-sm font-bold">M</span>
+						<div className="h-20 w-20 rounded-xl">
+                            <img src={logo} alt="Moodify" className="h-full w-full object-contain" />
 						</div>
 						<div>
 							<h1 className="text-2xl font-extrabold tracking-tight">
@@ -371,7 +372,9 @@ export default function MainDashboard() {
 						</div>
 					</section>
 
-					{renderModulePanel()}
+										<div key={selectedModule ?? 'none'} className="animate-fade-slide-in">
+                                            {renderModulePanel()}
+                                        </div>
 
 					<Card title="Generuj">
 						<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
