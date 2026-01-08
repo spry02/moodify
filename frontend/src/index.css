@@ -205,3 +205,18 @@ select {
   background: linear-gradient(#dbeafe, #dbeafe);
   color: #0f172a;
 }
+
+.animate-fade-slide-in {
+  animation: fadeSlideIn 900ms cubic-bezier(.16,.84,.24,1) both;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
