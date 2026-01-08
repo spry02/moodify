@@ -16,6 +16,16 @@ type SummaryResponse = {
   }>;
 };
 
+type HistoryItem = {
+  timestamp_utc: string;
+  source: string;
+  mood: string;
+  detected_emotion: string;
+  title: string;
+  artist: string;
+  spotify_id?: string;
+};
+
 const MOOD_LABELS: Record<string, string> = {
   "Szczęśliwy": "Szczęśliwy",
   "Smutny": "Smutny",
@@ -24,10 +34,53 @@ const MOOD_LABELS: Record<string, string> = {
   "Zaskoczony": "Zaskoczony",
 };
 
+const HISTORY_HEADERS = [
+  "timestamp_utc",
+  "source",
+  "mood",
+  "detected_emotion",
+  "title",
+  "artist",
+  "spotify_id",
+];
+
+const CHART_HEADERS = ["mood", "count"];
+
+const escapeCsv = (value: unknown) => {
+  const raw = value == null ? "" : String(value);
+  if (/[",\n\r]/.test(raw)) {
+    return `"${raw.replace(/"/g, '""')}"`;
+  }
+  return raw;
+};
+
+const buildCsv = (headers: string[], rows: Array<Record<string, unknown>>) => {
+  const lines = [headers.join(",")];
+  rows.forEach((row) => {
+    lines.push(headers.map((h) => escapeCsv(row[h])).join(","));
+  });
+  return lines.join("\r\n");
+};
+
+const downloadCsv = (filename: string, csv: string) => {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportingHistory, setExportingHistory] = useState(false);
+  const [exportingChart, setExportingChart] = useState(false);
 
   const rows = useMemo(() => {
     const counts = summary?.mood_counts ?? {};
@@ -40,6 +93,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
 
   useEffect(() => {
     if (!open) return;
+    setExportError(null);
 
     (async () => {
       if (!auth.currentUser) {
@@ -79,6 +133,77 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
     })();
   }, [open]);
 
+  const handleExportHistory = async () => {
+    if (!auth.currentUser) {
+      setExportError("Zaloguj sie, aby eksportowac dane.");
+      return;
+    }
+
+    setExportingHistory(true);
+    setExportError(null);
+    try {
+      const uid = auth.currentUser.uid;
+      const token = await auth.currentUser.getIdToken().catch(() => null);
+
+      const resp = await fetch("/api/history/items/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ uid }),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `HTTP ${resp.status}`);
+      }
+
+      const items = (await resp.json()) as HistoryItem[];
+      if (!items || items.length === 0) {
+        setExportError("Brak danych do eksportu.");
+        return;
+      }
+
+      const csvRows = items.map((item) => ({
+        timestamp_utc: item.timestamp_utc ?? "",
+        source: item.source ?? "",
+        mood: item.mood ?? "",
+        detected_emotion: item.detected_emotion ?? "",
+        title: item.title ?? "",
+        artist: item.artist ?? "",
+        spotify_id: item.spotify_id ?? "",
+      }));
+
+      const csv = buildCsv(HISTORY_HEADERS, csvRows);
+      downloadCsv(`moodify-history-${uid}.csv`, csv);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : "Nie udalo sie eksportowac danych.");
+    } finally {
+      setExportingHistory(false);
+    }
+  };
+
+  const handleExportChart = () => {
+    if (!summary || rows.entries.length === 0) {
+      setExportError("Brak danych do eksportu wykresu.");
+      return;
+    }
+
+    setExportingChart(true);
+    setExportError(null);
+    try {
+      const csvRows = rows.entries.map((row) => ({
+        mood: MOOD_LABELS[row.mood] ?? row.mood,
+        count: row.count,
+      }));
+      const csv = buildCsv(CHART_HEADERS, csvRows);
+      downloadCsv("moodify-mood-chart.csv", csv);
+    } finally {
+      setExportingChart(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -87,16 +212,26 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
         <Card title="Profil" className="lg:p-7">
           <div className="flex items-center justify-between">
             <p className="text-sm text-white/70">Podsumowanie Twoich rekomendacji.</p>
-            <button
-              className="px-4 py-2 bg-white/20 rounded hover:bg-white/30"
-              onClick={onClose}
-            >
-              Zamknij
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="px-3 py-2 text-sm bg-white/10 rounded hover:bg-white/20 disabled:opacity-60"
+                onClick={handleExportHistory}
+                disabled={exportingHistory}
+              >
+                {exportingHistory ? "Eksportuje..." : "Eksportuj CSV"}
+              </button>
+              <button
+                className="px-4 py-2 bg-white/20 rounded hover:bg-white/30"
+                onClick={onClose}
+              >
+                Zamknij
+              </button>
+            </div>
           </div>
 
           {loading && <p className="mt-4 text-sm text-white/60">Ładowanie…</p>}
           {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+          {exportError && <p className="mt-3 text-sm text-amber-300">{exportError}</p>}
 
           {!loading && !error && summary && (
             <div className="mt-6 space-y-6">
@@ -106,7 +241,16 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
               </div>
 
               <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
-                <p className="text-sm font-semibold text-white">Wykres nastrojów</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-white">Wykres nastrojów</p>
+                  <button
+                    className="px-3 py-1 text-xs bg-white/10 rounded hover:bg-white/20 disabled:opacity-60"
+                    onClick={handleExportChart}
+                    disabled={exportingChart || rows.entries.length === 0}
+                  >
+                    {exportingChart ? "Eksportuje..." : "Eksportuj CSV"}
+                  </button>
+                </div>
                 <div className="mt-3 space-y-2">
                   {rows.entries.length === 0 ? (
                     <p className="text-sm text-white/60">Brak historii — wygeneruj kilka rekomendacji.</p>
