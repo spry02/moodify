@@ -14,6 +14,7 @@ from routes.mood import router as mood_router
 from routes.health import router as health_router
 from routes.getters import router as getter_router
 from routes.history import router as history_router
+from routes.recommendations import router as recommendations_router
 
 baseDir = pathlib.Path(__file__).parent.parent
 load_dotenv(baseDir / ".env")
@@ -43,3 +44,4 @@ app.include_router(mood_router)
 app.include_router(predict_router)
 app.include_router(getter_router)
 app.include_router(history_router)
+app.include_router(recommendations_router)

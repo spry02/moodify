@@ -105,3 +105,46 @@ class SpotifyAPI:
             await self._get_access_token()
         return self._build_token_summary()
 
+    async def _make_api_request(self, method: str, url: str, **kwargs) -> dict[str, Any]:
+        token = await self._get_access_token()
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.request(
+                method,
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+                **kwargs
+            )
+            if response.status_code != httpx.codes.OK:
+                raise SpotifyAPIError(
+                    f"Błąd API Spotify ({response.status_code}): {response.text}"
+                )
+            return response.json()
+
+    async def get_recommendations(
+        self,
+        seed_genres: list[str] | None = None,
+        seed_artists: list[str] | None = None,
+        seed_tracks: list[str] | None = None,
+        limit: int = 20,
+        market: str | None = None,
+        **target_params: float
+    ) -> dict[str, Any]:
+        """Pobiera rekomendacje z Spotify Recommendations API."""
+        params: dict[str, Any] = {"limit": limit}
+        
+        if seed_genres:
+            params["seed_genres"] = ",".join(seed_genres[:5])
+        if seed_artists:
+            params["seed_artists"] = ",".join(seed_artists[:5])
+        if seed_tracks:
+            params["seed_tracks"] = ",".join(seed_tracks[:5])
+        if market:
+            params["market"] = market
+        
+        for key, value in target_params.items():
+            if value is not None:
+                params[key] = value
+        
+        url = "https://api.spotify.com/v1/recommendations"
+        return await self._make_api_request("GET", url, params=params)
+
