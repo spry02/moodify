@@ -125,7 +125,7 @@ export default function MainDashboard() {
 			id: it.spotify_id || `hist_${idx}_${Date.now()}`,
 			title: it.title,
 			artist: it.artist,
-			date: String(it.timestamp_utc || ""),
+			date: String(it.timestamp_utc.split("+")[0] || ""),
 		}))
 	);
 
