@@ -1,5 +1,5 @@
 from typing import Any, Dict, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 
 import httpx
@@ -63,7 +63,7 @@ def get_tracks_history_from_firestore(uid: str) -> Optional[Dict[str, Any]]:
         for doc in docs:
             songlist[doc.id] = doc.to_dict()['song']
             # print(f"{doc.id} => {doc.to_dict()}")
-            # print(songlist)
+            print(songlist)
         return songlist
     except Exception as e:
         print(f"Error getting records: {e}")
@@ -76,7 +76,7 @@ def _format_timestamp(value: Any) -> str:
         ts = value
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=timezone.utc)
-        return ts.astimezone(timezone.utc).isoformat()
+        return ts.astimezone(timezone(timedelta(hours=1))).isoformat(timespec='seconds')
     if hasattr(value, "to_datetime"):
         try:
             ts = value.to_datetime()
@@ -94,7 +94,7 @@ def _history_item_from_doc(doc) -> Dict[str, Any]:
     if not isinstance(song, dict):
         song = {}
 
-    timestamp_value = data.get("generated_at") or song.get("date") or getattr(doc, "create_time", None)
+    timestamp_value = data.get("generated_at")
 
     return {
         "timestamp_utc": _format_timestamp(timestamp_value),
