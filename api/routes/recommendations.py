@@ -1,7 +1,10 @@
+import random
 from typing import Any
+from enum import Enum
+from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from services.spotify import (
     SpotifyAPI,
@@ -9,150 +12,107 @@ from services.spotify import (
     SpotifyConfig,
     SpotifyNotConfiguredError,
 )
-from functools import lru_cache
 
 router = APIRouter(prefix="/api", tags=["recommendations"])
 
+class Mood(str, Enum):
+    HAPPY = "Szczęśliwy"
+    SAD = "Smutny"
+    CALM = "Spokojny"
+    ENERGETIC = "Energiczny"
+    SURPRISED = "Zaskoczony"
+
+
+MOOD_QUERIES = {
+    Mood.HAPPY: "happy hits feel good pop summer",
+    Mood.SAD: "sad songs piano melancholic acoustic",
+    Mood.CALM: "chill ambient relax study music",
+    Mood.ENERGETIC: "workout high energy rock electronic dance",
+    Mood.SURPRISED: "viral hits experimental alternative new music",
+}
 
 @lru_cache
 def get_spotify_api() -> SpotifyAPI:
     return SpotifyAPI(SpotifyConfig.from_env())
 
-
-MOOD_TO_SPOTIFY_PARAMS = {
-    "Szczęśliwy": {
-        "seed_genres": ["happy", "pop", "dance"],
-        "target_valence": 0.8,
-        "target_energy": 0.7,
-        "target_danceability": 0.8,
-    },
-    "Smutny": {
-        "seed_genres": ["sad", "acoustic", "indie"],
-        "target_valence": 0.2,
-        "target_energy": 0.3,
-        "target_danceability": 0.3,
-    },
-    "Spokojny": {
-        "seed_genres": ["ambient", "chill", "acoustic"],
-        "target_valence": 0.5,
-        "target_energy": 0.3,
-        "target_danceability": 0.4,
-    },
-    "Energiczny": {
-        "seed_genres": ["rock", "electronic", "work-out"],
-        "target_valence": 0.7,
-        "target_energy": 0.9,
-        "target_danceability": 0.8,
-    },
-    "Zaskoczony": {
-        "seed_genres": ["indie", "alternative", "pop"],
-        "target_valence": 0.6,
-        "target_energy": 0.6,
-        "target_danceability": 0.6,
-    },
-}
-
-
 class MoodRecommendationRequest(BaseModel):
-    mood: str
-    limit: int = 20
+    mood: Mood
+    limit: int = Field(default=20, ge=1, le=50, description="Limit wyników do przeszukania")
 
-
-@router.post("/recommendations/songs/", summary="Zwraca rekomendacje piosenek na podstawie nastroju")
+@router.post("/recommendations/songs/", summary="Zwraca losową piosenkę na podstawie nastroju")
 async def get_song_recommendations(
     req: MoodRecommendationRequest,
     spotify_api: SpotifyAPI = Depends(get_spotify_api),
 ) -> dict[str, Any]:
-    valid_moods = ["Szczęśliwy", "Smutny", "Spokojny", "Energiczny", "Zaskoczony"]
     
-    if req.mood not in valid_moods:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nieprawidłowy nastrój. Dozwolone wartości: {', '.join(valid_moods)}"
-        )
-    
-    if req.limit < 1 or req.limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit musi być między 1 a 100"
-        )
+    query = MOOD_QUERIES.get(req.mood, "top global hits")
     
     try:
-        params = MOOD_TO_SPOTIFY_PARAMS[req.mood]
-        recommendations = await spotify_api.get_recommendations(
-            seed_genres=params["seed_genres"],
-            limit=req.limit,
-            target_valence=params.get("target_valence"),
-            target_energy=params.get("target_energy"),
-            target_danceability=params.get("target_danceability"),
-        )
+        search_result = await spotify_api.search_tracks(query=query, limit=50)
         
+        tracks = search_result.get("tracks", {}).get("items", [])
+        
+        if not tracks:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Nie znaleziono utworów dla nastroju: {req.mood.value}"
+            )
+
+        random_track = random.choice(tracks)
+
         return {
-            "mood": req.mood,
-            "tracks": recommendations.get("tracks", []),
-            "seeds": recommendations.get("seeds", []),
+            "mood": req.mood.value,
+            "track": random_track,
+            "simple_info": {
+                "name": random_track.get("name"),
+                "artist": random_track["artists"][0]["name"] if random_track.get("artists") else "Unknown",
+                "spotify_url": random_track["external_urls"].get("spotify"),
+                "preview_url": random_track.get("preview_url"),
+                "image": random_track["album"]["images"][0]["url"] if random_track.get("album") and random_track["album"].get("images") else None
+            }
         }
+        
     except SpotifyNotConfiguredError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Spotify nie jest skonfigurowany"
+            detail="Serwis Spotify nie jest skonfigurowany."
         )
     except SpotifyAPIError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(e),
-        ) from e
+            detail=f"Błąd API Spotify: {str(e)}",
+        )
 
-
-@router.post("/recommendations/playlist/", summary="Zwraca rekomendacje playlisty na podstawie nastroju")
+@router.post("/recommendations/playlist/", summary="Generuje playlistę na podstawie nastroju")
 async def get_playlist_recommendations(
     req: MoodRecommendationRequest,
     spotify_api: SpotifyAPI = Depends(get_spotify_api),
 ) -> dict[str, Any]:
-    valid_moods = ["Szczęśliwy", "Smutny", "Spokojny", "Energiczny", "Zaskoczony"]
     
-    if req.mood not in valid_moods:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nieprawidłowy nastrój. Dozwolone wartości: {', '.join(valid_moods)}"
-        )
-    
-    if req.limit < 1 or req.limit > 50:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit musi być między 1 a 50"
-        )
+    query = MOOD_QUERIES.get(req.mood, "top hits")
     
     try:
-        params = MOOD_TO_SPOTIFY_PARAMS[req.mood]
-        recommendations = await spotify_api.get_recommendations(
-            seed_genres=params["seed_genres"],
-            limit=min(req.limit * 2, 100),
-            target_valence=params.get("target_valence"),
-            target_energy=params.get("target_energy"),
-            target_danceability=params.get("target_danceability"),
-        )
+        search_result = await spotify_api.search_tracks(query=query, limit=req.limit)
+        tracks = search_result.get("tracks", {}).get("items", [])
         
-        tracks = recommendations.get("tracks", [])
-        playlist_tracks = tracks[:req.limit] if len(tracks) > req.limit else tracks
-        
+        random.shuffle(tracks)
+
         return {
-            "mood": req.mood,
+            "mood": req.mood.value,
             "playlist": {
-                "name": f"Moodify - {req.mood}",
-                "tracks": playlist_tracks,
-                "total": len(playlist_tracks),
+                "name": f"Moodify - {req.mood.value}",
+                "description": f"Playlista wygenerowana dla: {req.mood.value}",
+                "tracks": tracks,
+                "total_tracks": len(tracks),
             },
-            "seeds": recommendations.get("seeds", []),
         }
     except SpotifyNotConfiguredError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Spotify nie jest skonfigurowany"
+            detail="Serwis Spotify nie jest skonfigurowany."
         )
     except SpotifyAPIError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(e),
-        ) from e
-
+            detail=f"Błąd API Spotify: {str(e)}",
+        )
