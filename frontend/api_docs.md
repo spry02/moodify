@@ -65,7 +65,7 @@ Zwraca utwór na podstawie nastroju
 **Request Body:**
 ```json
 {
-  "mood": "Szczęśliwy" | "Smutny" | "Zestresowany" | "Spokojny" | "Zmęczony"
+  "mood": "Szczęśliwy" | "Smutny" | "Spokojny" | "Energiczny" | "Zaskoczony"
 }
 ```
 
@@ -109,3 +109,109 @@ Zwraca utwór na podstawie nastroju przewidzianego ze zdjęcia
 **Errors:**
 - `400` - Plik nie jest obrazem / Błąd przetwarzania
 - `500` - Brak utworów dla nastroju
+
+## Recommendations
+
+### POST /api/recommendations/songs/
+Zwraca rekomendacje piosenek z Spotify na podstawie nastroju
+
+**Request Body:**
+```json
+{
+  "mood": "Szczęśliwy" | "Smutny" | "Spokojny" | "Energiczny" | "Zaskoczony",
+  "limit": 20
+}
+```
+
+**Response:**
+```json
+{
+  "mood": "Szczęśliwy",
+  "tracks": [
+    {
+      "id": "string",
+      "name": "string",
+      "artists": [...],
+      "album": {...},
+      "external_urls": {
+        "spotify": "string"
+      },
+      "preview_url": "string",
+      "duration_ms": 0,
+      "popularity": 0
+    }
+  ],
+  "seeds": [...]
+}
+```
+
+**Errors:**
+- `400` - Nieprawidłowy nastrój / Limit poza zakresem (1-100)
+- `502` - Błąd połączenia ze Spotify
+- `503` - Spotify nie skonfigurowany
+
+### POST /api/recommendations/playlist/
+Zwraca rekomendacje playlisty z Spotify na podstawie nastroju
+
+**Request Body:**
+```json
+{
+  "mood": "Szczęśliwy" | "Smutny" | "Spokojny" | "Energiczny" | "Zaskoczony",
+  "limit": 20
+}
+```
+
+**Response:**
+```json
+{
+  "mood": "Szczęśliwy",
+  "playlist": {
+    "name": "Moodify - Szczęśliwy",
+    "tracks": [...],
+    "total": 20
+  },
+  "seeds": [...]
+}
+```
+
+## Recommendations
+
+### POST /api/recommendations/songs/
+Zwraca jedną, losową piosenkę pasującą do nastroju (wylosowaną z wyników wyszukiwania Spotify).
+
+**Request Body:**
+```json
+{
+  "mood": "Szczęśliwy" | "Smutny" | "Spokojny" | "Energiczny" | "Zaskoczony",
+  "limit": 20
+}
+```
+**Response:**
+```json
+{
+  "mood": "Szczęśliwy",
+  "track": {
+    "id": "string",
+    "name": "string",
+    "artists": [...],
+    "album": {...},
+    "external_urls": {
+      "spotify": "string"
+    },
+    "duration_ms": 0,
+    "popularity": 0
+  },
+  "simple_info": {
+    "name": "Tytuł piosenki",
+    "artist": "Nazwa artysty",
+    "spotify_url": "[https://open.spotify.com/track/](https://open.spotify.com/track/)...",
+    "preview_url": "[https://p.scdn.co/mp3-preview/](https://p.scdn.co/mp3-preview/)..." or null,
+    "image": "[https://i.scdn.co/image/](https://i.scdn.co/image/)..."
+  }
+}
+```
+
+**Errors:**
+- `400` - Nieprawidłowy nastrój / Limit poza zakresem (1-50)
+- `502` - Błąd połączenia ze Spotify
+- `503` - Spotify nie skonfigurowany
