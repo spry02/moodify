@@ -103,7 +103,7 @@ export default function MainDashboard() {
 			"Content-Type": "application/json",
 			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
-		body: JSON.stringify({ uid, limit: 30 }),
+		body: JSON.stringify({ uid, limit: 5 }),
 	});
 
 	if (!resp.ok) {
