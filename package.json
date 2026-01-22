@@ -1,0 +1,8 @@
+{
+  "name": "moodify",
+  "version": "1.0.0",
+  "scripts": {
+    "win": "start cmd /c \"cd frontend && npm run dev\" && start cmd /c \"cd api && @powershell ./venv/scripts/activate.ps1 && pip install -r requirements.txt && uvicorn main:app --reload\"",
+    "lin": "gnome-terminal -- sh -c \"cd frontend; npm run dev; exec $SHELL\" && gnome-terminal -- sh -c \"cd api; python3 -m venv venv; source venv/bin/activate; pip install -r requirements.txt; uvicorn main:app --reload; exec $SHELL\""
+  }
+}

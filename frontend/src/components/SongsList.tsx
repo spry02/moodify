@@ -5,6 +5,7 @@ export interface TrackItem {
   title: string;
   artist: string;
   durationMs: number;
+  url: string;
 }
 
 interface SongsListProps {
@@ -37,7 +38,7 @@ export const SongsList: React.FC<SongsListProps> = ({ tracks }) => {
               <span className="mr-3 text-xs text-white/50">
                 #{(index + 1).toString().padStart(2, "0")}
               </span>
-              <span className="font-semibold text-white">{track.title}</span>
+              <a href={track.url} target="_blank"><span className="font-semibold text-white">{track.title}</span></a>
               <span className="ml-2 text-white/60">{track.artist}</span>
             </div>
             <div className="text-xs text-white/50">{minutes}:{seconds}</div>

@@ -1,21 +1,22 @@
 import React from "react";
 
-export interface PlaylistItem {
+export interface HistoryItem {
   id: string;
   title: string;
   artist: string;
-  date: string
+  date: string;
+  url: string;
 }
 
-interface PlaylistsListProps {
-  items: PlaylistItem[];
+interface HistoryListProps {
+  items: HistoryItem[];
 }
 
-export const PlaylistsList: React.FC<PlaylistsListProps> = ({ items }) => {
+export const HistoryList: React.FC<HistoryListProps> = ({ items }) => {
   if (!items.length) {
     return (
       <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-sm text-white/60">
-        Tutaj pojawią się gotowe playlisty na podstawie Twojego nastroju.
+        Tutaj pojawi się historia twoich utworów.
       </div>
     );
   }
@@ -35,7 +36,7 @@ export const PlaylistsList: React.FC<PlaylistsListProps> = ({ items }) => {
               <span className="mr-3 text-xs text-white/50">
                 #{(index + 1).toString().padStart(2, "0")}
               </span>
-              <span className="font-semibold text-white">{track.title}</span>
+              <a href={track.url} target="_blank"><span className="font-semibold text-white">{track.title}</span></a>
               <span className="ml-2 text-white/60">{track.artist}</span>
             </div>
             <div className="text-xs text-white/50">{dmy} {time}</div>
