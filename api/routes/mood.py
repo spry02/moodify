@@ -145,43 +145,6 @@ def predict_mood_from_text(text: str) -> str:
 def mood_from_emotion(emotion: str) -> str:
     return EMOTION_TO_MOOD.get(emotion, "Spokojny")
 
-
-@router.post("/mood/song/", summary="Zwraca utwór na podstawie nastroju")
-async def get_mood_song(req: MoodRequest) -> dict[str, Any]:
-    valid_moods = ["Szczęśliwy", "Smutny", "Spokojny", "Energiczny", "Zaskoczony"]
-    
-    if req.mood not in valid_moods:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nieprawidłowy nastrój. Dozwolone wartości: {', '.join(valid_moods)}"
-        )
-    
-    songs = MOOD_SONGS.get(req.mood, [])
-    if not songs:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Brak utworów dla tego nastroju"
-        )
-    
-    selected_song = random.choice(songs)
-
-    if req.uid:
-        try:
-            mood_data = {
-                "detected_emotion": None,
-                "mood": req.mood,
-                "source": "mood",
-                "song": selected_song,
-                "generated_at": firestore.SERVER_TIMESTAMP,
-            }
-            from services.firebase import save_mood_to_firestore
-            save_mood_to_firestore(req.uid, mood_data)
-        except Exception as e:
-            print(f"Nie udalo sie zapisac historii w Firebase: {str(e)}")
-
-    return {"mood": req.mood, "song": selected_song}
-
-
 @router.post("/text/mood/song/", summary="Zwraca utwór na podstawie nastroju przewidzianego z opisu")
 async def get_song_from_text(req: TextMoodRequest) -> dict[str, Any]:
     if not req.text or not req.text.strip():
@@ -192,29 +155,7 @@ async def get_song_from_text(req: TextMoodRequest) -> dict[str, Any]:
 
     detected_emotion = predict_emotion_from_text(req.text)
     mood = mood_from_emotion(detected_emotion) if detected_emotion else predict_mood_from_text(req.text)
-    songs = MOOD_SONGS.get(mood, [])
-    if not songs:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Brak utworów dla nastroju: {mood}",
-        )
 
-    selected_song = random.choice(songs)
-
-    if req.uid:
-        try:
-            mood_data = {
-                "detected_emotion": detected_emotion,
-                "mood": mood,
-                "source": "description",
-                "song": selected_song,
-                "generated_at": firestore.SERVER_TIMESTAMP,
-            }
-            from services.firebase import save_mood_to_firestore
-            save_mood_to_firestore(req.uid, mood_data)
-        except Exception as e:
-            print(f"Nie udalo sie zapisac historii w Firebase: {str(e)}")
-
-    return {"detected_emotion": detected_emotion, "mood": mood, "song": selected_song}
+    return {"detected_emotion": detected_emotion, "mood": mood}
 
 

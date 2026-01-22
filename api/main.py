@@ -8,6 +8,26 @@ from firebase_admin import credentials
 
 baseDir = pathlib.Path(__file__).parent.parent
 env_path = baseDir / "api/.env"
+
+if not env_path.exists():
+    print(f"Creating default .env")
+    try:
+        with open(".env", "w") as f:
+            f.write('''ENV=dev\n
+                    GOOGLE_APPLICATION_CREDENTIALS="./service-account.json"\n
+                    FRONTEND_URL="http://localhost:4200"\n
+                    FIREBASE_API_KEY="AIzaSyBVIpzHSETzGNIVN7kj6kp4pGIbun_OqRU"\n
+                    SPOTIFY_CLIENT_ID="CHANGE_ME"\n
+                    SPOTIFY_CLIENT_SECRET="CHANGE_ME"
+                    ''')
+            f.close()
+            raise ValueError
+    
+    except ValueError:
+        print(f"Please go to .env file and configure Sporify API values")
+    except Exception as e:
+        print(f"An error occured while creating .env file: {e}")
+
 load_dotenv(env_path)
 
 print(f"Loading .env from: {env_path}")

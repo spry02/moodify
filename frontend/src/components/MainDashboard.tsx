@@ -6,10 +6,10 @@ import { CameraBox } from "./CameraBox";
 import { MoodSelectPanel } from "./MoodSelectPanel";
 import { GenerateButton } from "./GenerateButton";
 import { SongsList, TrackItem } from "./SongsList";
-import { PlaylistsList, PlaylistItem } from "./PlaylistsList";
+import { HistoryList, HistoryItem } from "./HistoryList";
 import { RecommendationsSummary } from "./Recommendations";
 import { AnalysisResult } from "./AnalysisResult";
-import { MoodType } from "./types/types";
+import { MoodType, SongItem } from "./types/types";
 import UserPanel from "./Auth/UserPanel";
 import { ThemeToggle } from "./ThemeToggle";
 import { auth } from "./firebase/firebase";
@@ -56,7 +56,7 @@ export default function MainDashboard() {
 
   // Po usunięciu mocków - teraz są puste dopóki API nie zwróci danych
   const [tracks, setTracks] = useState<TrackItem[]>([]);
-  const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFileName, setPhotoFileName] = useState<string | null>(null);
@@ -90,6 +90,7 @@ export default function MainDashboard() {
   };
 
   const getTracksfromDB = async () => {
+
 	if (!auth.currentUser) return [];
 
 	const uid = auth.currentUser.uid;
@@ -115,17 +116,16 @@ export default function MainDashboard() {
 		title: string;
 		artist: string;
 		spotify_id?: string;
-		source?: string;
-		mood?: string;
-		detected_emotion?: string;
+		spotify_url?: string;
 	}>;
 
-	setPlaylists(
+	setHistory(
 		items.map((it, idx) => ({
 			id: it.spotify_id || `hist_${idx}_${Date.now()}`,
 			title: it.title,
 			artist: it.artist,
 			date: String(it.timestamp_utc.split("+")[0] || ""),
+			url: it.spotify_url || "",
 		}))
 	);
 
@@ -146,11 +146,27 @@ export default function MainDashboard() {
 				formData.append("file", photoFile);
 				if (uid) formData.append("uid", uid);
 
-				const resp = await fetch("/api/image/mood/song/", {
+				const _resp = await fetch("/api/image/mood/song/", {
 					method: "POST",
 					headers: token ? { Authorization: `Bearer ${token}` } : undefined,
 					body: formData,
 				});
+
+				if (!_resp.ok) {
+					const text = await _resp.text();
+					throw new Error(text || `HTTP ${_resp.status}`);
+				}
+
+				const _data = (await _resp.json()) as {
+					detected_emotion: string;
+					mood: MoodType;
+				};
+
+				const resp = await fetch("/api/recommendations/songs/", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ mood: _data.mood, uid, source: selectedModule })
+				})
 
 				if (!resp.ok) {
 					const text = await resp.text();
@@ -158,23 +174,23 @@ export default function MainDashboard() {
 				}
 
 				const data = (await resp.json()) as {
-					detected_emotion: string;
 					mood: MoodType;
-					song: { title: string; artist: string; spotify_id?: string };
+					simple_info: SongItem;
 				};
 
-				setDetectedEmotion(data.detected_emotion);
+				setDetectedEmotion(_data.detected_emotion);
 				setAnalysisMood(data.mood);
 				setAnalysisSourceLabel("Analiza zdjęcia");
 				setTracks([
 					{
-						id: data.song.spotify_id ?? `song_${Date.now()}`,
-						title: data.song.title,
-						artist: data.song.artist,
-						durationMs: 180000,
+						id: data.simple_info.spotify_id ?? `song_${Date.now()}`,
+						title: data.simple_info.name,
+						artist: data.simple_info.artist,
+						durationMs: data.simple_info.duration_ms,
+						url: data.simple_info.spotify_url
 					},
 				]);
-				// setPlaylists([]);
+				setHistory([]);
 			} else if (selectedModule === "mood") {
 				// Manual mood selection -> get a song for the selected mood
 				setDetectedEmotion(null);
@@ -182,11 +198,11 @@ export default function MainDashboard() {
 				setAnalysisSourceLabel("Wybór nastroju");
 				const uid = auth.currentUser?.uid ?? null;
 
-				const resp = await fetch("/api/mood/song/", {
+				const resp = await fetch("/api/recommendations/songs/", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ mood: selectedMood, uid }),
-				});
+					body: JSON.stringify({ mood: selectedMood, uid, source: selectedModule })
+				})
 
 				if (!resp.ok) {
 					const text = await resp.text();
@@ -195,15 +211,16 @@ export default function MainDashboard() {
 
 				const data = (await resp.json()) as {
 					mood: MoodType;
-					song: { title: string; artist: string; spotify_id?: string };
+					simple_info: SongItem;
 				};
 
 				setTracks([
 					{
-						id: data.song.spotify_id ?? `song_${Date.now()}`,
-						title: data.song.title,
-						artist: data.song.artist,
-						durationMs: 180000,
+						id: data.simple_info.spotify_id ?? `song_${Date.now()}`,
+						title: data.simple_info.name,
+						artist: data.simple_info.artist,
+						durationMs: data.simple_info.duration_ms,
+						url: data.simple_info.spotify_url
 					},
 				]);
 			} else if (selectedModule === "description") {
@@ -212,11 +229,28 @@ export default function MainDashboard() {
 				setAnalysisSourceLabel("Analiza opisu");
 				const uid = auth.currentUser?.uid ?? null;
 
-				const resp = await fetch("/api/text/mood/song/", {
+				const _resp = await fetch("/api/text/mood/song/", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ text: description, uid }),
+					body: JSON.stringify({ text: description, uid}),
 				});
+
+				if (!_resp.ok) {
+					const text = await _resp.text();
+					throw new Error(text || `HTTP ${_resp.status}`);
+				}
+
+				const _data = (await _resp.json()) as {
+					detected_emotion?: string | null;
+					mood: MoodType;
+					song: { title: string; artist: string; spotify_id?: string };
+				};
+
+				const resp = await fetch("/api/recommendations/songs/", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ mood: _data.mood, uid, source: selectedModule, desc: description })
+				})
 
 				if (!resp.ok) {
 					const text = await resp.text();
@@ -224,24 +258,24 @@ export default function MainDashboard() {
 				}
 
 				const data = (await resp.json()) as {
-					detected_emotion?: string | null;
 					mood: MoodType;
-					song: { title: string; artist: string; spotify_id?: string };
+					simple_info: SongItem;
 				};
 
-				setDetectedEmotion(data.detected_emotion ?? null);
+				setDetectedEmotion(_data.detected_emotion ?? null);
 				setAnalysisMood(data.mood);
 				setTracks([
 					{
-						id: data.song.spotify_id ?? `song_${Date.now()}`,
-						title: data.song.title,
-						artist: data.song.artist,
-						durationMs: 180000,
+						id: data.simple_info.spotify_id ?? `song_${Date.now()}`,
+						title: data.simple_info.name,
+						artist: data.simple_info.artist,
+						durationMs: data.simple_info.duration_ms,
+						url: data.simple_info.spotify_url
 					},
 				]);
 			} else {
 				setTracks([]);
-				setPlaylists([]);
+				setHistory([]);
 				setDetectedEmotion(null);
 				setAnalysisMood(null);
 				setAnalysisSourceLabel(null);
@@ -263,7 +297,6 @@ export default function MainDashboard() {
     (async () => {
       try {
         const dbTracks = await getTracksfromDB();
-        // console.log(dbTracks)
       } catch (e) {
         console.error(e);
       }
@@ -292,11 +325,11 @@ export default function MainDashboard() {
               onReset={() => {
                 setPhotoPreview(null);
                 setPhotoFileName(null);
-								setPhotoFile(null);
-								setDetectedEmotion(null);
-							setAnalysisMood(null);
-							setAnalysisSourceLabel(null);
-							setTracks([]);
+				setPhotoFile(null);
+				setDetectedEmotion(null);
+				setAnalysisMood(null);
+				setAnalysisSourceLabel(null);
+				setTracks([]);
               }}
               disabled={false}
             />
@@ -409,6 +442,7 @@ export default function MainDashboard() {
 							songTitle={tracks[0].title}
 							songArtist={tracks[0].artist}
 							sourceLabel={analysisSourceLabel ?? undefined}
+							song_url={tracks[0].url}
 						/>
 					)}
 
@@ -429,7 +463,7 @@ export default function MainDashboard() {
 							</Card>
 
 							<Card title="Poprzednie utwory">
-								<PlaylistsList items={playlists} />
+								<HistoryList items={history} />
 							</Card>
 						</div>	
 						

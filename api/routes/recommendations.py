@@ -3,8 +3,12 @@ from typing import Any
 from enum import Enum
 from functools import lru_cache
 
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+
+from firebase_admin import firestore
 
 from services.spotify import (
     SpotifyAPI,
@@ -37,6 +41,9 @@ def get_spotify_api() -> SpotifyAPI:
 
 class MoodRecommendationRequest(BaseModel):
     mood: Mood
+    uid: str
+    source: str
+    desc: str = None
     limit: int = Field(default=20, ge=1, le=50, description="Limit wyników do przeszukania")
 
 @router.post("/recommendations/songs/", summary="Zwraca losową piosenkę na podstawie nastroju")
@@ -60,6 +67,29 @@ async def get_song_recommendations(
 
         random_track = random.choice(tracks)
 
+        if req.uid:
+            try:
+                date = datetime.datetime.now()
+                db_date=f"{date.day}-{date.month}-{date.year}T{date.hour}:{date.minute}:{date.second}"
+                mood_data = {
+                    "mood": req.mood,
+                    "name": random_track.get("name"),
+                    "artist": random_track["artists"][0]["name"] if random_track.get("artists") else "Unknown",
+                    "spotify_url": random_track["external_urls"].get("spotify"),
+                    "spotify_id": random_track.get("id"),
+                    "preview_url": random_track.get("preview_url"),
+                    "duration_ms": random_track.get("duration_ms"),
+                    "source": req.source,
+                    "desc": req.desc,
+                    "date": db_date,
+                    "generated_at": firestore.SERVER_TIMESTAMP
+                }
+
+                from services.firebase import save_mood_to_firestore
+                save_mood_to_firestore(req.uid, mood_data)
+            except Exception as e:
+                print(f"Nie udało się zapisać historii nastroju: {str(e)}")
+
         return {
             "mood": req.mood.value,
             "track": random_track,
@@ -67,7 +97,9 @@ async def get_song_recommendations(
                 "name": random_track.get("name"),
                 "artist": random_track["artists"][0]["name"] if random_track.get("artists") else "Unknown",
                 "spotify_url": random_track["external_urls"].get("spotify"),
+                "spotify_id": random_track.get("id"),
                 "preview_url": random_track.get("preview_url"),
+                "duration_ms": random_track.get("duration_ms"),
                 "image": random_track["album"]["images"][0]["url"] if random_track.get("album") and random_track["album"].get("images") else None
             }
         }

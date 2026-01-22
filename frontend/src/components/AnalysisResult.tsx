@@ -8,6 +8,7 @@ interface AnalysisResultProps {
   songTitle: string;
   songArtist: string;
   sourceLabel?: string;
+  song_url?: string;
 }
 
 const EMOTION_EMOJI: Record<string, string> = {
@@ -32,6 +33,7 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({
   songTitle,
   songArtist,
   sourceLabel,
+  song_url,
 }) => {
   const emotionAvailable = Boolean(detectedEmotion);
   const resolvedSourceLabel = sourceLabel ? sourceLabel : "Analiza";
@@ -91,18 +93,20 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({
         </div>
 
         {/* Polecony Utwór */}
-        <div className="rounded-2xl border border-blue-400/30 bg-white/5 p-5">
-          <div className="flex items-center gap-2 text-blue-300 mb-3">
-            <Music className="h-5 w-5" />
-            <span className="text-sm font-semibold">Polecony Utwór</span>
+        <a href={song_url} target="_blank">
+          <div className="rounded-2xl border border-blue-400/30 bg-white/5 p-5">
+            <div className="flex items-center gap-2 text-blue-300 mb-3">
+              <Music className="h-5 w-5" />
+              <span className="text-sm font-semibold">Polecony Utwór</span>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-2">🎵</div>
+              <p className="text-lg font-bold text-white line-clamp-1">{songTitle}</p>
+              <p className="text-sm text-white/70 line-clamp-1">{songArtist}</p>
+              <p className="text-xs text-white/60 mt-1">dopasowany do nastroju</p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-4xl mb-2">🎵</div>
-            <p className="text-lg font-bold text-white line-clamp-1">{songTitle}</p>
-            <p className="text-sm text-white/70 line-clamp-1">{songArtist}</p>
-            <p className="text-xs text-white/60 mt-1">dopasowany do nastroju</p>
-          </div>
-        </div>
+        </a>
       </div>
 
       <div className="mt-4 rounded-xl bg-emerald-400/10 px-4 py-3 text-center">

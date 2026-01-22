@@ -1,25 +1,25 @@
-# 📊 Dokumentacja Zbiorów Danych - Projekt Moodify
+# Dokumentacja Zbiorów Danych - Projekt Moodify
 
 ## 1. AffectNet - Zbiór do Rozpoznawania Emocji z Twarzy
 
-### 📋 Podstawowe Informacje
+### Podstawowe Informacje
 
 **Twórcy:** Mohammad H. Mahoor i Ali Mollahosseini (University of Denver)  
 **Rok powstania:** 2017  
 **Rozmiar:** ~450,000 zdjęć twarzy  
 **Źródło:** Zdjęcia z internetu (Google, Bing, Yahoo)
 
-### � Zawartość Zbioru
+### Zawartość Zbioru
 
 **8 kategorii emocji:**
-1. Neutral (Neutralna) 😐
-2. Happy (Szczęście) 😊
-3. Sad (Smutek) 😢
-4. Surprise (Zaskoczenie) 😲
-5. Fear (Strach) 😨
-6. Disgust (Wstręt) 🤢
-7. Anger (Gniew) 😠
-8. Contempt (Pogarda) 😤
+1. Neutral (Neutralna) 
+2. Happy (Szczęście) 
+3. Sad (Smutek) 
+4. Surprise (Zaskoczenie) 
+5. Fear (Strach) 
+6. Disgust (Wstręt) 
+7. Anger (Gniew) 
+8. Contempt (Pogarda) 
 
 **Statystyki:**
 - Training: ~287,000 zdjęć
@@ -27,7 +27,7 @@
 - Różnorodność: wiele kultur, wieku, płci
 - Jakość: różne oświetlenie i kąty (realistyczne warunki)
 
-### ✅ Kategorie Użyte w Projekcie
+### Kategorie Użyte w Projekcie
 
 **Wybrane 6 emocji:**
 - Happy, Sad, Anger, Fear, Surprise, Neutral
@@ -35,33 +35,33 @@
 **Pominięte 2 emocje:**
 - Disgust, Contempt (brak odpowiednika w tekście)
 
-### 💡 Dlaczego AffectNet?
+### Dlaczego AffectNet?
 
-✅ Największy publicznie dostępny zbiór (450k zdjęć)  
-✅ Realistyczne warunki - nie studio, prawdziwe życie  
-✅ Różnorodność demograficzna  
-✅ Dostępny przez Kaggle
+- Największy publicznie dostępny zbiór (450k zdjęć)  
+- Realistyczne warunki - nie studio, prawdziwe życie  
+- Różnorodność demograficzna  
+- Dostępny przez Kaggle
 
 ---
 
 ## 2. Emotion Dataset - Zbiór Tekstowy z Emocjami
 
-### 📋 Podstawowe Informacje
+### Podstawowe Informacje
 
 **Twórcy:** Dair.ai (open-source AI organization)  
 **Rok publikacji:** 2020  
 **Rozmiar:** 20,000 przykładów tekstowych  
 **Źródło:** Tweety w języku angielskim
 
-### � Zawartość Zbioru
+### Zawartość Zbioru
 
 **6 kategorii emocji:**
-1. Sadness (Smutek) 😢
-2. Joy (Radość) 😊
-3. Love (Miłość) ❤️
-4. Anger (Gniew) 😠
-5. Fear (Strach) 😨
-6. Surprise (Zaskoczenie) 😲
+1. Sadness (Smutek) 
+2. Joy (Radość) 
+3. Love (Miłość) 
+4. Anger (Gniew) 
+5. Fear (Strach) 
+6. Surprise (Zaskoczenie) 
 
 **Statystyki:**
 - Training: 16,000 tekstów
@@ -69,23 +69,23 @@
 - Test: 2,000 tekstów
 - Średnia długość: 15-20 słów (krótkie tweety)
 
-### ✅ Kategorie Użyte w Projekcie
+### Kategorie Użyte w Projekcie
 
 **Wszystkie 6 emocji zostają użyte**
 
 **Mapowanie Love:**
 - Love → Happy (obie są pozytywnymi emocjami)
 
-### 💡 Dlaczego Emotion Dataset?
+### Dlaczego Emotion Dataset?
 
-✅ Prosty i gotowy do użycia  
-✅ Łatwa integracja z Hugging Face  
-✅ Zbalansowany rozkład klas  
-✅ Kompatybilny z modelami BERT
+- Prosty i gotowy do użycia  
+- Łatwa integracja z Hugging Face  
+- Zbalansowany rozkład klas  
+- Kompatybilny z modelami BERT
 
 ---
 
-## 3. 🔄 Mapowanie Emocji Między Zbiorami
+## 3. Mapowanie Emocji Między Zbiorami
 
 ### Wspólne emocje (5):
 
@@ -101,7 +101,7 @@
 - **Love → Happy** (obie pozytywne emocje)
 - **Neutral** - tylko dla twarzy
 
-### 🎯 Finalne Kategorie w Projekcie
+### Finalne Kategorie w Projekcie
 
 **5 wspólnych emocji:**
 1. Happy/Joy (Szczęście/Radość)
@@ -114,7 +114,7 @@
 
 ---
 
-## 4. 📈 Statystyki Finalne
+## 4. Statystyki Finalne
 
 | Zbiór | Użyte | Rozmiar | Procent |
 |-------|-------|---------|---------|
@@ -123,7 +123,7 @@
 
 ---
 
-## 5. 🤖 Transfer Learning - Sugerowane Modele
+## 5. Transfer Learning - Sugerowane Modele
 
 ### Dla Rozpoznawania Twarzy (AffectNet)
 
@@ -172,7 +172,7 @@ Wykorzystujemy modele BERT/RoBERTa, które są wytrenowane na ogromnych korpusac
    - Dobra dokumentacja
    - Bezpieczny wybór
 
-### 🎯 Dlaczego Transfer Learning?
+### Dlaczego Transfer Learning?
 
 **Bez Transfer Learning:**
 - Trenowanie od zera: ~tydzień czasu GPU
@@ -186,7 +186,7 @@ Wykorzystujemy modele BERT/RoBERTa, które są wytrenowane na ogromnych korpusac
 
 ---
 
-## 6. ✅ Podsumowanie
+## 6. Podsumowanie
 
 ### Dlaczego Te Zbiory?
 

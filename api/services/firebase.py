@@ -90,20 +90,17 @@ def _format_timestamp(value: Any) -> str:
 
 def _history_item_from_doc(doc) -> Dict[str, Any]:
     data = doc.to_dict() or {}
-    song = data.get("song") or {}
-    if not isinstance(song, dict):
-        song = {}
+    if not isinstance(data, dict):
+        data = {}
 
     timestamp_value = data.get("generated_at")
 
     return {
         "timestamp_utc": _format_timestamp(timestamp_value),
-        "source": str(data.get("source") or ""),
-        "mood": str(data.get("mood") or ""),
-        "detected_emotion": str(data.get("detected_emotion") or ""),
-        "title": str(song.get("title") or ""),
-        "artist": str(song.get("artist") or ""),
-        "spotify_id": str(song.get("spotify_id") or ""),
+        "title": str(data.get("name") or ""),
+        "artist": str(data.get("artist") or ""),
+        "spotify_id": str(data.get("spotify_id") or ""),
+        "spotify_url": str(data.get("spotify_url") or "")
     }
 
 
