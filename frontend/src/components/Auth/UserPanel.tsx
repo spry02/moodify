@@ -19,7 +19,6 @@ export default function UserPanel() {
 	const [password, setPassword] = useState("");
 	const panelRef = useRef<HTMLDivElement | null>(null);
 
-	// Load username
 	useEffect(() => {
 		const unsub = onAuthStateChanged(auth, async (user) => {
 			if (!user) return;
@@ -34,7 +33,6 @@ export default function UserPanel() {
 		return () => unsub();
 	}, []);
 
-	// Close dropdown when clicking outside
 	useEffect(() => {
 		const handleClick = (e: MouseEvent) => {
 			if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -50,12 +48,10 @@ export default function UserPanel() {
 		window.location.reload();
 	};
 
-	// 🔥  REAUTH + DELETE  🔥
 	const confirmDelete = async () => {
 		if (!auth.currentUser || !auth.currentUser.email) return;
 
 		try {
-			// 1️⃣ Reauthenticate
 			const cred = EmailAuthProvider.credential(
 				auth.currentUser.email,
 				password
@@ -63,13 +59,10 @@ export default function UserPanel() {
 
 			await reauthenticateWithCredential(auth.currentUser, cred);
 
-			// 2️⃣ Delete Firestore doc
 			await deleteDoc(doc(db, "users", auth.currentUser.uid));
 
-			// 3️⃣ Delete Firebase Auth user
 			await deleteUser(auth.currentUser);
 
-			// 4️⃣ Reload UI
 			window.location.reload();
 		} catch (err) {
 			alert("Niepoprawne hasło. Spróbuj ponownie.");
@@ -97,13 +90,12 @@ export default function UserPanel() {
 				👤 {username}
 			</div>
 
-			{/* DROPDOWN */}
 			{open && (
 				<div
 					className="
 		absolute 
 		right-0 mt-2 
-		w-40 
+		w-60 
 		rounded-lg 
 		bg-white/10 
 		border border-white/20 
@@ -120,7 +112,7 @@ export default function UserPanel() {
 							setShowProfile(true);
 						}}
 					>
-						📈 Profil
+						📈 Podsumowanie
 					</button>
 
 					<button
@@ -137,14 +129,13 @@ export default function UserPanel() {
 							setShowReauth(true);
 						}}
 					>
-						🗑 Usuń konto
+						🧺 Usuń konto
 					</button>
 				</div>
 			)}
 
 			<ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
 
-			{/* REAUTH MODAL */}
 			{showReauth && (
 				<div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
 					<div className="bg-white/10 p-6 rounded-xl border border-white/20 max-w-sm w-full">

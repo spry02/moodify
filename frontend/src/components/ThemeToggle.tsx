@@ -35,7 +35,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onToggle }) => 
         />
         <span
           className={`pointer-events-none absolute top-1/2 h-7 w-7 -translate-y-1/2 rounded-full bg-white shadow-lg transition-transform duration-300 ${
-            isDark ? "left-2" : "left-[calc(100%-2.75rem)]"
+            isDark ? "left-2" : "right-2"
           }`}
         />
       </div>
