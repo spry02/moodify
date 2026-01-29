@@ -30,7 +30,8 @@ def load_image_model():
     global _image_model, _emotion_map
 
     try:
-        import tensorflow as tf  # noqa: F401
+        import tensorflow as tf
+        import numpy as np
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -48,6 +49,10 @@ def load_image_model():
             )
         
         print("⏳ Ładuję model...")
+
+        np.random.seed(42)
+        tf.random.set_seed(42)
+
         import warnings
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=UserWarning)
